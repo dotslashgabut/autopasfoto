@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- background -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#0d0f14"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="none" stroke="#00e5b0" stroke-width="2"/>
+
+  <!-- photo card -->
+  <rect x="16" y="12" width="32" height="40" rx="3" fill="#161a23" stroke="#00e5b0" stroke-width="2.2"/>
+
+  <!-- corner crop marks (passport photo framing cue) -->
+  <path d="M12 16 v-4 h4" fill="none" stroke="#ffc94d" stroke-width="2" stroke-linecap="round"/>
+  <path d="M52 16 v-4 h-4" fill="none" stroke="#ffc94d" stroke-width="2" stroke-linecap="round"/>
+  <path d="M12 48 v4 h4" fill="none" stroke="#ffc94d" stroke-width="2" stroke-linecap="round"/>
+  <path d="M52 48 v4 h-4" fill="none" stroke="#ffc94d" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- portrait: head + shoulders silhouette -->
+  <circle cx="32" cy="27" r="6.2" fill="#00e5b0"/>
+  <path d="M20.5 47c0-7.2 5.1-12 11.5-12s11.5 4.8 11.5 12" fill="#00e5b0"/>
+</svg>
