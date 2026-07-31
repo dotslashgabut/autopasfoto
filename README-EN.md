@@ -23,6 +23,43 @@ Single HTML file, no installation required — just open it in a modern browser 
 - Undo/Redo (Ctrl+Z / Ctrl+Y), Light/Dark mode, ID/EN language switch.
 - Export & Import layout settings to/from a **JSON** file.
 
+## Canvas Edit Toolbar
+
+The toolbar bar under the header (can be hidden/shown with the **🧰** button in the header; its state persists in `localStorage`) holds all the controls for manually editing the photo-box layout:
+
+- **Undo / Redo** — ↩/↪ buttons, same as Ctrl+Z / Ctrl+Y.
+- **✏️ Edit Layout: ON/OFF** — toggles edit mode, paired with a **scope** dropdown (`Halaman ini saja` "This page only" / `Semua halaman` "All pages") that decides whether changes apply only to the current page or to every page at once.
+- **🔄 Rotate Kotak** (Rotate Box) — rotates the box (and its contents) 90° for the selected box(es).
+- **🔄 Rotate Foto** (Rotate Photo) — rotates **only the photo** 90° inside the box (the box's own size/orientation stays the same).
+- **↔ Flip Foto H** / **↕ Flip Foto V** — mirrors the photo horizontally/vertically inside the selected box(es).
+- **✥ Crop Drag** — click-and-drag mode directly on a box to adjust the photo's crop position. While this mode is active and a box is selected, the **arrow keys** can be used to nudge the crop position in small steps.
+- **🖐️ Hand Tool** — drag-to-pan mode for the canvas view (right-click+drag also always works, in any mode).
+- **Sheet zoom controls** — −/+ buttons plus a **Fit ⇄ 100%** indicator (click to toggle); Ctrl+Scroll on the preview also zooms, as do Ctrl +/Ctrl −/Ctrl 0 on the keyboard.
+- **➕ Foto + / ➖ Foto -** — zoom the photo in/out within the selected box; **🎯 Reset Foto Pan** resets the pan position back to center.
+- **Snap Kotak** (Snap Boxes) — boxes automatically snap to other boxes while dragging.
+- **Snap Grid** — snaps to a grid whose spacing (mm) is set in the number field next to it.
+- **📐 Snap Cut-Guide** — snaps specifically to mid-gap cut-guide positions, meant to be used together with the Cut Guide Style "Garis di Tengah Jarak" / "Tanda Potong di Tengah Jarak" (mid-gap line/cut-mark) so spacing between boxes stays exactly matched to Box Spacing.
+- **↺ Reset Terpilih / Reset Halaman Ini / Reset Semua Halaman** — resets box position & transforms (rotation/flip/pan): only the selected boxes, all boxes on the current page, or all boxes on every page.
+- **Align (Ratakan)** — aligns the selected boxes to each other: Left, Center H, Right, Top, Center V, Bottom (needs at least 2 selected boxes), plus **Distribute H / Distribute V** to space them evenly (needs at least 3 boxes).
+- **Align to Paper (Ratakan ke Kertas)** — aligns the selected box(es) to the edges/center of the paper's print area (Left/Center H/Right/Top/Center V/Bottom, needs at least 1 box). A **"Sebagai Grup"** (As a Group) checkbox controls whether selected boxes are aligned together as one group (keeping their relative positions) or each individually.
+- **Arrange (Urutan / z-order)** — Bring to Front / Forward One / Backward One / Send to Back, controlling which box appears on top when boxes overlap.
+- **✕ Hapus Pilihan** (Clear Selection) — clears the current box selection.
+- **☰ Select** — multi-select mode: clicking a box adds/removes it from the selection (behaves like holding Shift continuously), while drag-to-select still works as usual.
+- A selection-count indicator is shown at the far right of the toolbar.
+
+The header also includes page navigation (**‹ Prev** / **Next ›** with a "Page X / Y" indicator), the language toggle (**ID/EN**), and the light/dark theme toggle — all independent of the edit toolbar above.
+
+### Keyboard Shortcuts
+
+| Shortcut | Function |
+|---|---|
+| `Ctrl/Cmd + Z` | Undo |
+| `Ctrl/Cmd + Y` or `Ctrl/Cmd + Shift + Z` | Redo |
+| `Ctrl/Cmd + Scroll` on the preview | Zoom the sheet view |
+| `Ctrl/Cmd + +` / `Ctrl/Cmd + -` | Zoom the sheet view in/out |
+| `Ctrl/Cmd + 0` | Toggle Fit ⇄ 100% |
+| Arrow keys (↑↓←→) | Nudge the photo crop position in small steps — only active while **Crop Drag** mode is on and a box is selected |
+
 ## New Feature: Auto Crop Face (AI)
 
 Located in the **"🤖 Auto Crop Wajah (AI)"** card, right below the "Foto Sumber" (Source Photos) panel.
