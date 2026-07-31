@@ -160,6 +160,7 @@ The **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** (Export/Import Set
   - `removeBgImage(im)` — the pipeline: wait for the model to be ready → `removeBackground()` → the resulting PNG data URL is loaded into a new `<img>` → overwrites `im.img`/`im.url` (added to the same `aiImageCache` as auto-crop) → updates the `bgStatus` badge.
   - `bgBadge(status)` — renders the status badge (`processing`/`ok`/`fail`) on the photo row, alongside auto-crop's `aiBadge(status)`.
   - Inside `removeBackground()`, the model's output mask (low resolution) is upscaled **separately** from the original photo (which is always drawn at full resolution), then combined as the alpha channel — so photo sharpness doesn't degrade to match the mask's resolution.
+- `drawCoverRotated(ctx,img,dx,dy,dw,dh,zoom,offX,offY,rotDeg)` — the single drawing function used for the **"Rotate (Tilt)"** slider (used for page rendering, the live preview, and PDF/PNG export alike, so all three stay consistent). The photo is drawn `cover`-fit and then rotated by `rotDeg` degrees around the box's center, `clip()`-ed to the box area (dw×dh) so the tilt never bleeds onto the frame or neighboring boxes. Before rotating, the destination rect (dw,dh) is auto-scaled by a factor `s = |cos θ| + max(dw/dh, dh/dw) × |sin θ|` — the minimum scale needed for the rotated rect to still fully cover the original (dw×dh) box at any angle, preventing uncovered box corners (the "diagonal white triangle" bug). The existing `zoom`/`offX`/`offY` crop values are then applied as-is on top of that already-scaled rect.
 
 ---
 
@@ -167,6 +168,7 @@ The **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** (Export/Import Set
 
 - **Left panel widened** from 400px → 460px, so labels in the Auto Crop AI card (e.g. "Margin Atas (Ubun ke Tepi)") no longer get clipped/wrapped onto 2 lines.
 - **Sharper preview canvas rendering**: preview raster resolution raised from a base of 150dpi to 300dpi, multiplied further by the screen's `devicePixelRatio` (capped at 2×) — so it no longer looks blurry on retina/high-DPI screens or when zoomed in. This does not affect PDF/PNG export resolution (those already use whatever DPI you select separately).
+- **Fixed the "Rotate (Tilt)" slider — the diagonal white/background triangles at the corners are now gone.** This slider (in the per-photo ⚙ panel, including on top of an Auto Crop Face AI result) smoothly tilts the photo by degree inside its box. Previously, tilting the photo at any angle left the box's own corners no longer covered by the photo, so the background color (`photoBgColor`) or plain white showed through diagonally at the corners. The photo's zoom is now auto-compensated based on the tilt angle — the more it's tilted, the more it's scaled up just enough — so the box stays fully covered at any angle, the same way the Straighten tool works in Lightroom/Photoshop.
 
 ---
 
