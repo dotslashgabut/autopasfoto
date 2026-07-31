@@ -160,6 +160,7 @@ Tombol **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** menyimpan/memua
   - `removeBgImage(im)` — pipeline: tunggu model siap → `removeBackground()` → hasil data-URL PNG di-load jadi `<img>` baru → menimpa `im.img`/`im.url` (masuk ke `aiImageCache` yang sama seperti auto-crop) → update badge `bgStatus`.
   - `bgBadge(status)` — render badge status (`processing`/`ok`/`fail`) di baris foto, berdampingan dengan `aiBadge(status)` milik auto-crop.
   - Di dalam `removeBackground()`, mask hasil model (resolusi rendah) di-upscale **terpisah** dari foto asli (yang tetap digambar di resolusi penuh), lalu digabung sebagai alpha channel — supaya ketajaman foto tidak ikut turun mengikuti resolusi mask.
+- `drawCoverRotated(ctx,img,dx,dy,dw,dh,zoom,offX,offY,rotDeg)` — fungsi gambar tunggal yang dipakai untuk slider **"Putar (Miring)"** (dipakai di render halaman, preview live, dan hasil export PDF/PNG, jadi semuanya konsisten). Foto digambar `cover`-fit lalu diputar `rotDeg` derajat di sekitar titik tengah kotak, dengan `clip()` ke area kotak (dw×dh) supaya kemiringan tidak bocor ke frame/kotak tetangga. Sebelum diputar, ukuran persegi tujuan (dw,dh) discale otomatis dengan faktor `s = |cos θ| + max(dw/dh, dh/dw) × |sin θ|` — rumus minimum supaya persegi yang sudah diputar itu tetap menutupi penuh kotak asli (dw×dh) di sudut berapa pun, mencegah sudut kotak yang tidak tertutup foto ("segitiga putih diagonal"). `zoom`/`offX`/`offY` (dari sistem crop bawaan) tetap dipakai apa adanya di atas rect yang sudah di-scale itu.
 
 ---
 
@@ -167,6 +168,7 @@ Tombol **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** menyimpan/memua
 
 - **Panel kiri diperlebar** dari 400px → 460px, supaya label-label di kartu Auto Crop AI (mis. "Margin Atas (Ubun ke Tepi)") tidak terpotong/wrap ke 2 baris.
 - **Preview canvas dirender lebih tajam**: resolusi raster preview dinaikkan dari 150dpi menjadi 300dpi dasar, dikalikan lagi dengan `devicePixelRatio` layar (maks 2×) — supaya tidak buram di layar retina/high-DPI atau saat di-zoom. Tidak memengaruhi resolusi hasil export PDF/PNG (itu memang sudah memakai DPI pilihan sendiri).
+- **Perbaikan slider "Putar (Miring)" — segitiga putih/background di sudut sekarang hilang.** Slider ini (di panel ⚙ per-foto, juga berlaku pada hasil Auto Crop Wajah AI) memutar foto secara halus per-derajat di dalam kotak. Sebelumnya, memutar foto pada sudut berapa pun membuat sudut-sudut kotak tidak lagi tertutup foto, sehingga warna latar (`photoBgColor`) atau putih polos mengintip di sudut secara diagonal. Sekarang zoom foto dikompensasi otomatis mengikuti sudut kemiringan — makin miring, foto membesar secukupnya — supaya kotak selalu tertutup penuh di sudut berapa pun, mirip cara kerja alat "Straighten" di Lightroom/Photoshop.
 
 ---
 

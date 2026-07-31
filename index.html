@@ -925,6 +925,7 @@ const TRANSLATIONS = {
     lblPanX: 'Geser X',
     lblPanY: 'Geser Y',
     btnResetCrop: '↺ Reset Crop',
+    lblRotate: 'Putar (Miring)',
     
     // Toasts & Dialogs
     toastNoFiles: 'Tidak ada file gambar yang valid',
@@ -1182,6 +1183,7 @@ const TRANSLATIONS = {
     lblPanX: 'Pan X',
     lblPanY: 'Pan Y',
     btnResetCrop: '↺ Reset Crop',
+    lblRotate: 'Rotate (Tilt)',
     
     // Toasts & Dialogs
     toastNoFiles: 'No valid image files found',
@@ -1305,7 +1307,7 @@ function captureSnapshot(){
     fillMode:state.fillMode, targetPages:state.targetPages,
     mixedBoxes:state.mixedBoxes.map(mb=>({...mb})),
     rotateAllowed:state.rotateAllowed,
-    imageQtys:state.images.map(im=>({id:im.id,qty:im.qty,zoom:im.zoom,offX:im.offX,offY:im.offY,imgUrl:im.url,aiStatus:im.aiStatus})),
+    imageQtys:state.images.map(im=>({id:im.id,qty:im.qty,zoom:im.zoom,offX:im.offX,offY:im.offY,rotation:im.rotation,imgUrl:im.url,aiStatus:im.aiStatus})),
     overrides:{...state.overrides},
     posOverrides:JSON.parse(JSON.stringify(state.posOverrides)),
     cellRotations:{...state.cellRotations},
@@ -1331,7 +1333,7 @@ function restoreSnapshot(snap){
     snap.imageQtys.forEach(iq=>{
       const im=state.images.find(x=>x.id===iq.id);
       if(im){
-        im.qty=iq.qty; im.zoom=iq.zoom; im.offX=iq.offX; im.offY=iq.offY;
+        im.qty=iq.qty; im.zoom=iq.zoom; im.offX=iq.offX; im.offY=iq.offY; im.rotation=iq.rotation!==undefined?iq.rotation:(im.rotation||0);
         im.aiStatus=iq.aiStatus!==undefined?iq.aiStatus:im.aiStatus;
         if(iq.imgUrl && iq.imgUrl!==im.url){
           const cached=aiImageCache.get(iq.imgUrl);
@@ -1702,7 +1704,7 @@ async function handleFiles(fileList){
     const url=URL.createObjectURL(f);
     try{
       const img=await loadImage(url);
-      state.images.push({id:'img'+(imgSeq++), name:f.name, img, origImg:img, url, qty:1, zoom:1, offX:0, offY:0, open:false, aiStatus:null, bgStatus:null});
+      state.images.push({id:'img'+(imgSeq++), name:f.name, img, origImg:img, url, qty:1, zoom:1, offX:0, offY:0, rotation:0, open:false, aiStatus:null, bgStatus:null});
       aiImageCache.set(url, img);
     }catch(e){ /* skip broken file */ }
   }
@@ -1784,6 +1786,7 @@ function renderImageList(){
         </div>
       </div>
       <div class="adjust-panel ${im.open?'':'hidden'}">
+        <div class="slider-row"><label>${t.lblRotate}</label><input type="range" min="-180" max="180" step="1" value="${im.rotation||0}" data-act="rotation"><span class="val">${(im.rotation||0).toFixed(0)}°</span></div>
         <div class="slider-row"><label>${t.lblZoom}</label><input type="range" min="1" max="3" step="0.05" value="${im.zoom}" data-act="zoom"><span class="val">${im.zoom.toFixed(2)}×</span></div>
         <div class="slider-row"><label>${t.lblPanX}</label><input type="range" min="-1" max="1" step="0.02" value="${im.offX}" data-act="offX"><span class="val">${im.offX.toFixed(2)}</span></div>
         <div class="slider-row"><label>${t.lblPanY}</label><input type="range" min="-1" max="1" step="0.02" value="${im.offY}" data-act="offY"><span class="val">${im.offY.toFixed(2)}</span></div>
@@ -1813,15 +1816,16 @@ function renderImageList(){
     row.querySelector('[data-act="dec"]').onclick=()=>{ im.qty=Math.max(0,im.qty-1); renderImageList(); refreshAll(); };
     row.querySelector('[data-act="inc"]').onclick=()=>{ im.qty+=1; renderImageList(); refreshAll(); };
     row.querySelector('.qty-stepper input').oninput=e=>{ im.qty=Math.max(0,parseInt(e.target.value)||0); refreshAll(); };
+    const rt=row.querySelector('[data-act="rotation"]'); if(rt) rt.oninput=e=>{ im.rotation=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.rotation.toFixed(0)+'°'; refreshPreviewOnly(); };
     const zr=row.querySelector('[data-act="zoom"]'); if(zr) zr.oninput=e=>{ im.zoom=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.zoom.toFixed(2)+'×'; refreshPreviewOnly(); };
     const ox=row.querySelector('[data-act="offX"]'); if(ox) ox.oninput=e=>{ im.offX=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.offX.toFixed(2); refreshPreviewOnly(); };
     const oy=row.querySelector('[data-act="offY"]'); if(oy) oy.oninput=e=>{ im.offY=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.offY.toFixed(2); refreshPreviewOnly(); };
-    const rs=row.querySelector('[data-act="reset"]'); if(rs) rs.onclick=()=>{ im.zoom=1; im.offX=0; im.offY=0; renderImageList(); refreshAll(); };
+    const rs=row.querySelector('[data-act="reset"]'); if(rs) rs.onclick=()=>{ im.zoom=1; im.offX=0; im.offY=0; im.rotation=0; renderImageList(); refreshAll(); };
     const ac=row.querySelector('[data-act="autocrop"]'); if(ac) ac.onclick=async()=>{ im.aiStatus='detecting'; renderImageList(); await autoCropImage(im); };
     const rb=row.querySelector('[data-act="removebg"]'); if(rb) rb.onclick=async()=>{ if(pickForAssign()) return; await removeBgImage(im); };
     const ro=row.querySelector('[data-act="restoreOrig"]'); if(ro) ro.onclick=()=>{
       if(im.origImg){ im.img=im.origImg; im.url=im.origImg.src; }
-      im.zoom=1; im.offX=0; im.offY=0; im.aiStatus=null; im.bgStatus=null;
+      im.zoom=1; im.offX=0; im.offY=0; im.rotation=0; im.aiStatus=null; im.bgStatus=null;
       renderImageList(); refreshAll();
     };
     list.appendChild(row);
@@ -1888,6 +1892,8 @@ function aiCanvasToImage(canvas){
    (undo snapshots only store the url string, since Image elements can't be JSON-serialized) */
 const aiImageCache=new Map();
 
+
+
 async function autoCropImage(im){
   if(!window.faceAI){ toast(TRANSLATIONS[state.lang||'id'].toastAiModuleNotLoaded); im.aiStatus='fail'; renderImageList(); return false; }
   await window.faceAI.ready;
@@ -1947,7 +1953,7 @@ async function autoCropImage(im){
   aiImageCache.set(correctedImg.src, correctedImg);
 
   im.img=correctedImg; im.url=correctedImg.src;
-  im.zoom=zoom; im.offX=offX; im.offY=offY;
+  im.zoom=zoom; im.offX=offX; im.offY=offY; im.rotation=0;
   im.aiStatus=clamped?'ok-clamped':'ok';
   renderImageList(); refreshAll();
   return true;
@@ -2236,6 +2242,38 @@ function drawCover(ctx,img,dx,dy,dw,dh,zoom,offX,offY){
   ctx.drawImage(img,sx,sy,sw,sh,dx,dy,dw,dh);
 }
 
+/* Same as drawCover, but additionally rotates the photo (in fine, continuous degrees)
+   around the center of its own destination rect — this is the live "Putar (Miring)"
+   / "Rotate (Tilt)" slider in the per-photo adjust-panel. Non-destructive: nothing is
+   baked into the source image, it's just a transform applied at draw time, so it stays
+   editable at full quality and updates the preview instantly while dragging the slider.
+   The box's own background fill (photoBgColor), already painted before this runs, shows
+   through in any corner the tilted photo doesn't cover — clip() keeps it confined to the
+   box so a tilt never bleeds onto the frame/border or neighboring boxes.
+
+   Auto-compensation: rotating a dw×dh rectangle in place around its own center always
+   leaves the box's own corners uncovered (a rotated rectangle can never fully contain the
+   axis-aligned box it started from) — that's the diagonal background/white triangles at
+   the corners. To prevent that, the destination rect the photo is fit into is scaled up by
+   `s` before rotating, exactly enough that the rotated rectangle still fully covers the
+   box at any angle (same idea as Lightroom/Photoshop's auto-scale-on-straighten). Derived
+   from requiring both box corners' local-frame coordinates to stay within the scaled
+   rect's half-extents: s = |cos θ| + max(dw/dh, dh/dw) * |sin θ|. */
+function drawCoverRotated(ctx,img,dx,dy,dw,dh,zoom,offX,offY,rotDeg){
+  if(!rotDeg){ drawCover(ctx,img,dx,dy,dw,dh,zoom,offX,offY); return; }
+  const rad=rotDeg*Math.PI/180;
+  const cosA=Math.abs(Math.cos(rad)), sinA=Math.abs(Math.sin(rad));
+  const ratio=Math.max(dw/dh, dh/dw);
+  const s=cosA + ratio*sinA;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(dx,dy,dw,dh); ctx.clip();
+  ctx.translate(dx+dw/2, dy+dh/2);
+  ctx.rotate(rad);
+  const cw=dw*s, ch=dh*s;
+  drawCover(ctx,img,-cw/2,-ch/2,cw,ch,zoom,offX,offY);
+  ctx.restore();
+}
+
 /* ── Crop marks with overlap prevention ── */
 function drawCropMarks(ctx,x,y,w,h,len,gap,color,lw){
   ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.setLineDash([]);
@@ -2443,17 +2481,17 @@ function renderPageCanvas(meta,pageIndex,dpi){
         ctx.rotate(totalPhotoRot*Math.PI/180);
         ctx.scale(flip.fx?-1:1, flip.fy?-1:1);
         ctx.translate(-dw/2,-dh/2);
-        drawCover(ctx,cell.image.img,0,0,dw,dh,crop.zoom,crop.offX,crop.offY);
+        drawCoverRotated(ctx,cell.image.img,0,0,dw,dh,crop.zoom,crop.offX,crop.offY,cell.image.rotation||0);
         ctx.restore();
       } else if(flip.fx||flip.fy){
         ctx.save();
         ctx.translate(ix+iw/2, iy+ih/2);
         ctx.scale(flip.fx?-1:1, flip.fy?-1:1);
         ctx.translate(-iw/2,-ih/2);
-        drawCover(ctx,cell.image.img,0,0,iw,ih,crop.zoom,crop.offX,crop.offY);
+        drawCoverRotated(ctx,cell.image.img,0,0,iw,ih,crop.zoom,crop.offX,crop.offY,cell.image.rotation||0);
         ctx.restore();
       } else {
-        drawCover(ctx,cell.image.img,ix,iy,iw,ih,crop.zoom,crop.offX,crop.offY);
+        drawCoverRotated(ctx,cell.image.img,ix,iy,iw,ih,crop.zoom,crop.offX,crop.offY,cell.image.rotation||0);
       }
     }
     /* Draw guides using the same cw,ch — always matches the box+photo shape */
