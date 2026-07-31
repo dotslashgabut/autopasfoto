@@ -23,6 +23,43 @@ Satu file HTML, tidak perlu instalasi apa pun — cukup dibuka di browser modern
 - Undo/Redo (Ctrl+Z / Ctrl+Y), mode Terang/Gelap, Bahasa ID/EN.
 - Export & Import pengaturan layout ke/dari file **JSON**.
 
+## Toolbar Edit Kanvas
+
+Bar toolbar di bawah header (bisa disembunyikan/ditampilkan lewat tombol **🧰** di header, statusnya tersimpan di `localStorage`) berisi semua kontrol untuk mengedit layout kotak foto secara manual:
+
+- **Undo / Redo** — tombol ↩/↪, sama dengan Ctrl+Z / Ctrl+Y.
+- **✏️ Edit Layout: ON/OFF** — toggle mode edit, dipasangkan dengan dropdown **cakupan** (`Halaman ini saja` / `Semua halaman`) yang menentukan apakah perubahan hanya berlaku di halaman aktif atau ke semua halaman sekaligus.
+- **🔄 Rotate Kotak** — putar kotak (beserta isinya) 90° pada kotak terpilih.
+- **🔄 Rotate Foto** — putar **hanya foto** 90° di dalam kotak (ukuran/orientasi kotak tidak berubah).
+- **↔ Flip Foto H** / **↕ Flip Foto V** — cerminkan foto secara horizontal/vertikal di dalam kotak terpilih.
+- **✥ Crop Drag** — mode klik & seret langsung di atas kotak untuk mengatur posisi crop foto. Saat mode ini aktif dan ada kotak terpilih, **tombol panah (arrow keys)** bisa dipakai untuk menggeser posisi crop sedikit demi sedikit (nudge).
+- **🖐️ Hand Tool** — mode seret kanvas untuk menggeser tampilan (klik kanan+seret juga selalu bisa dipakai kapan saja, di mode manapun).
+- **Zoom Tampilan Lembar** — tombol −/+ dan indikator **Fit ⇄ 100%** (klik untuk beralih); juga bisa pakai Ctrl+Scroll pada preview, atau Ctrl +/Ctrl −/Ctrl 0 dari keyboard.
+- **➕ Foto + / ➖ Foto -** — perbesar/perkecil zoom foto pada kotak terpilih; **🎯 Reset Foto Pan** mengembalikan posisi geser (pan) ke tengah.
+- **Snap Kotak** — kotak otomatis "nempel" ke kotak lain saat digeser.
+- **Snap Grid** — nempel ke grid dengan jarak (mm) yang bisa diatur di kolom angka di sebelahnya.
+- **📐 Snap Cut-Guide** — snap khusus ke posisi garis potong tengah-jarak, cocok dipakai bersama Cut Guide Style "Garis di Tengah Jarak" / "Tanda Potong di Tengah Jarak" agar jarak antar kotak tetap presisi sama dengan Box Spacing.
+- **↺ Reset Terpilih / Reset Halaman Ini / Reset Semua Halaman** — mengembalikan posisi & transformasi (rotasi/flip/pan) kotak: hanya yang terpilih, semua kotak di halaman aktif, atau semua kotak di semua halaman.
+- **Ratakan** — perataan antar-kotak-terpilih: Kiri, Tengah H, Kanan, Atas, Tengah V, Bawah (butuh min. 2 kotak terpilih), plus **Sebar H / Sebar V** untuk menyebarkan jarak secara merata (butuh min. 3 kotak).
+- **Ratakan ke Kertas** — meratakan kotak terpilih ke tepi/tengah area cetak kertas (Kiri/Tengah H/Kanan/Atas/Tengah V/Bawah Kertas, min. 1 kotak). Ada opsi centang **"Sebagai Grup"**: jika aktif, kotak-kotak terpilih diratakan bersama sebagai satu grup (posisi relatif antar kotak tetap terjaga); jika tidak, tiap kotak diratakan sendiri-sendiri.
+- **Urutan (Z-order)** — Paling Depan / Maju 1 / Mundur 1 / Paling Belakang, untuk mengatur kotak mana yang tampil di atas saat saling tumpang tindih.
+- **✕ Hapus Pilihan** — batalkan seleksi kotak yang sedang aktif.
+- **☰ Select** — mode seleksi multi: klik kotak untuk menambah/mengurangi dari seleksi (perilakunya seperti menahan Shift terus-menerus), sementara drag area untuk seleksi tetap berfungsi seperti biasa.
+- Indikator jumlah kotak terpilih ditampilkan di ujung kanan toolbar.
+
+Di header juga terdapat navigasi halaman (**‹ Prev** / **Next ›** beserta indikator "Halaman X / Y"), tombol ganti bahasa (**ID/EN**), dan tombol ganti tema terang/gelap — semuanya independen dari toolbar edit di atas.
+
+### Shortcut Keyboard
+
+| Shortcut | Fungsi |
+|---|---|
+| `Ctrl/Cmd + Z` | Undo |
+| `Ctrl/Cmd + Y` atau `Ctrl/Cmd + Shift + Z` | Redo |
+| `Ctrl/Cmd + Scroll` pada preview | Zoom tampilan lembar |
+| `Ctrl/Cmd + +` / `Ctrl/Cmd + -` | Zoom tampilan lembar in/out |
+| `Ctrl/Cmd + 0` | Toggle Fit ⇄ 100% |
+| Tombol panah (↑↓←→) | Nudge posisi crop foto sedikit demi sedikit — hanya aktif saat mode **Crop Drag** menyala dan ada kotak terpilih |
+
 ## Fitur Baru: Auto Crop Wajah (AI)
 
 Terletak di kartu **"🤖 Auto Crop Wajah (AI)"**, tepat di bawah panel "Foto Sumber".
