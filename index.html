@@ -705,6 +705,7 @@ window.bgRemovalAI.removeBackground = function(imgEl){
   } finally {
     if(mask.close) mask.close();
     if(result.close) result.close();
+    freeCanvas(maskCanvas); freeCanvas(maskFullCanvas); freeCanvas(outCanvas);
   }
 };
 </script>
@@ -1378,6 +1379,7 @@ function autoSnapshot(){
       }
       lastSnapshotStr=snap;
       updateUndoRedoButtons();
+      pruneAiImageCache();
     }
   },400);
 }
@@ -1394,6 +1396,7 @@ function undo(){
   refreshAll();
   isRestoringSnapshot=false;
   updateUndoRedoButtons();
+  pruneAiImageCache();
   toast(TRANSLATIONS[state.lang||'id'].toastUndo);
 }
 
@@ -1408,6 +1411,7 @@ function redo(){
   refreshAll();
   isRestoringSnapshot=false;
   updateUndoRedoButtons();
+  pruneAiImageCache();
   toast(TRANSLATIONS[state.lang||'id'].toastRedo);
 }
 
@@ -1751,23 +1755,19 @@ $('folderInput').onchange=e=>{ handleFiles(e.target.files); e.target.value=''; }
 ['dragleave','drop'].forEach(ev=>$('dropzone').addEventListener(ev,e=>{ e.preventDefault(); $('dropzone').classList.remove('drag'); }));
 $('dropzone').addEventListener('drop',e=>{ if(e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); });
 
-function renderImageList(){
-  const list=$('imgList');
-  const lang = state.lang || 'id';
-  const t = TRANSLATIONS[lang];
-  if(!state.images.length){
-    list.innerHTML=`<div class="empty-imgs"><div class="ei">🖼️</div><p>${lang==='id'?'Belum ada foto dimuat':'No photos loaded yet'}</p></div>`;
-    return;
-  }
-  list.innerHTML='';
-  state.images.forEach(im=>{
-    const row=document.createElement('div'); row.className='img-row';
-    row.innerHTML=`
+/* id -> row element, so re-renders can patch existing rows in place instead of tearing
+   the whole list down and rebuilding it (which caused the flicker: every row's fade-in
+   animation replayed and every thumbnail <img> re-decoded, even for rows that hadn't
+   actually changed). */
+const imgRowEls=new Map();
+
+function imgRowInnerHTML(im,t){
+  return `
       <div class="img-row-main">
         <img class="img-thumb" src="${im.url}" title="${t.thumbTitle}">
         <div class="img-info">
-          <div class="img-name">${im.name}</div>
-          <div class="img-meta">${im.img.naturalWidth}×${im.img.naturalHeight}px ${aiBadge(im.aiStatus)} ${bgBadge(im.bgStatus)}</div>
+          <div class="img-name"></div>
+          <div class="img-meta"></div>
         </div>
       </div>
       <div class="img-row-controls">
@@ -1779,56 +1779,173 @@ function renderImageList(){
         <div class="img-row-actions">
           <button class="mini-btn" data-act="autocrop" title="Auto crop wajah (AI) foto ini">🤖</button>
           <button class="mini-btn" data-act="removebg" title="Hapus background foto ini (AI, transparan)">✂️</button>
-          ${im.origImg && im.img!==im.origImg ? `<button class="mini-btn" data-act="restoreOrig" title="Kembalikan ke foto asli (batalkan auto-crop/hapus-bg AI)">🗘</button>` : ''}
+          <button class="mini-btn" data-act="restoreOrig" title="Kembalikan ke foto asli (batalkan auto-crop/hapus-bg AI)">🗘</button>
           <button class="mini-btn" data-act="fillsheets" title="${t.titleFillsheets}">🗎</button>
           <button class="mini-btn" data-act="adjust" title="${t.titleAdjust}">⚙</button>
           <button class="mini-btn danger" data-act="remove" title="${t.titleRemove}">✕</button>
         </div>
       </div>
-      <div class="adjust-panel ${im.open?'':'hidden'}">
-        <div class="slider-row"><label>${t.lblRotate}</label><input type="range" min="-180" max="180" step="1" value="${im.rotation||0}" data-act="rotation"><span class="val">${(im.rotation||0).toFixed(0)}°</span></div>
-        <div class="slider-row"><label>${t.lblZoom}</label><input type="range" min="1" max="3" step="0.05" value="${im.zoom}" data-act="zoom"><span class="val">${im.zoom.toFixed(2)}×</span></div>
-        <div class="slider-row"><label>${t.lblPanX}</label><input type="range" min="-1" max="1" step="0.02" value="${im.offX}" data-act="offX"><span class="val">${im.offX.toFixed(2)}</span></div>
-        <div class="slider-row"><label>${t.lblPanY}</label><input type="range" min="-1" max="1" step="0.02" value="${im.offY}" data-act="offY"><span class="val">${im.offY.toFixed(2)}</span></div>
+      <div class="adjust-panel">
+        <div class="slider-row"><label>${t.lblRotate}</label><input type="range" min="-180" max="180" step="1" data-act="rotation"><span class="val"></span></div>
+        <div class="slider-row"><label>${t.lblZoom}</label><input type="range" min="1" max="3" step="0.05" data-act="zoom"><span class="val"></span></div>
+        <div class="slider-row"><label>${t.lblPanX}</label><input type="range" min="-1" max="1" step="0.02" data-act="offX"><span class="val"></span></div>
+        <div class="slider-row"><label>${t.lblPanY}</label><input type="range" min="-1" max="1" step="0.02" data-act="offY"><span class="val"></span></div>
         <button class="btn btn-s btn-sm" data-act="reset">${t.btnResetCrop}</button>
       </div>`;
-    const thumb=row.querySelector('.img-thumb');
-    function pickForAssign(){
-      if(!state.selection || state.selection.size===0) return false;
-      state.selection.forEach(idx=>{
-        state.overrides[`${state.currentPage}:${idx}`]=im.id;
-      });
-      const n=state.selection.size;
-      refreshAll();
-      toast(t.toastAssigned.replace('{name}', im.name).replace('{n}', n));
-      return true;
+}
+
+function buildImgRow(im,t){
+  const row=document.createElement('div'); row.className='img-row'; row.dataset.id=im.id;
+  row.innerHTML=imgRowInnerHTML(im,t);
+  return row;
+}
+
+/* Patches an existing row's DOM to match the current state of `im`, touching only the
+   attributes/text that actually need to change so the browser never has to re-decode
+   the thumbnail or restart the row's entrance animation for unrelated updates. */
+function updateImgRow(row,im,t){
+  const thumb=row.querySelector('.img-thumb');
+  if(thumb.src!==im.url) thumb.src=im.url;
+  thumb.title=t.thumbTitle;
+  const nameEl=row.querySelector('.img-name');
+  if(nameEl.textContent!==im.name) nameEl.textContent=im.name;
+  const metaHTML=`${im.img.naturalWidth}×${im.img.naturalHeight}px ${aiBadge(im.aiStatus)} ${bgBadge(im.bgStatus)}`;
+  const metaEl=row.querySelector('.img-meta');
+  if(metaEl.innerHTML!==metaHTML) metaEl.innerHTML=metaHTML;
+
+  const qtyInput=row.querySelector('.qty-stepper input');
+  if(document.activeElement!==qtyInput && qtyInput.value!=String(im.qty)) qtyInput.value=im.qty;
+
+  const hasRestore=!!(im.origImg && im.img!==im.origImg);
+  const restoreBtn=row.querySelector('[data-act="restoreOrig"]');
+  restoreBtn.classList.toggle('hidden',!hasRestore);
+  restoreBtn.title=t.titleRestoreOrig||restoreBtn.title;
+
+  row.querySelector('[data-act="fillsheets"]').title=t.titleFillsheets;
+  row.querySelector('[data-act="adjust"]').title=t.titleAdjust;
+  row.querySelector('[data-act="remove"]').title=t.titleRemove;
+
+  const panel=row.querySelector('.adjust-panel');
+  panel.classList.toggle('hidden',!im.open);
+  const labels=panel.querySelectorAll('.slider-row label');
+  if(labels[0]) labels[0].textContent=t.lblRotate;
+  if(labels[1]) labels[1].textContent=t.lblZoom;
+  if(labels[2]) labels[2].textContent=t.lblPanX;
+  if(labels[3]) labels[3].textContent=t.lblPanY;
+  const resetBtn=panel.querySelector('[data-act="reset"]');
+  if(resetBtn) resetBtn.textContent=t.btnResetCrop;
+  const setSlider=(act,val,fmt)=>{
+    const input=row.querySelector(`[data-act="${act}"]`);
+    if(document.activeElement!==input) input.value=val;
+    const label=input.nextElementSibling;
+    if(label) label.textContent=fmt(val);
+  };
+  setSlider('rotation',im.rotation||0,v=>v.toFixed(0)+'°');
+  setSlider('zoom',im.zoom,v=>v.toFixed(2)+'×');
+  setSlider('offX',im.offX,v=>v.toFixed(2));
+  setSlider('offY',im.offY,v=>v.toFixed(2));
+}
+
+function pickForAssignImg(im,t){
+  if(!state.selection || state.selection.size===0) return false;
+  state.selection.forEach(idx=>{
+    state.overrides[`${state.currentPage}:${idx}`]=im.id;
+  });
+  const n=state.selection.size;
+  refreshAll();
+  toast(t.toastAssigned.replace('{name}', im.name).replace('{n}', n));
+  return true;
+}
+
+let imgListDelegationBound=false;
+function bindImgListDelegation(){
+  if(imgListDelegationBound) return;
+  imgListDelegationBound=true;
+  const list=$('imgList');
+  list.addEventListener('click',e=>{
+    const row=e.target.closest('.img-row');
+    if(!row) return;
+    const im=state.images.find(x=>x.id===row.dataset.id);
+    if(!im) return;
+    const t=TRANSLATIONS[state.lang||'id'];
+    if(e.target.closest('.img-thumb')){ if(pickForAssignImg(im,t)) return; im.open=!im.open; renderImageList(); return; }
+    const btn=e.target.closest('[data-act]');
+    if(!btn) return;
+    switch(btn.dataset.act){
+      case 'adjust':
+        if(pickForAssignImg(im,t)) return;
+        im.open=!im.open; renderImageList();
+        break;
+      case 'fillsheets':{
+        const meta=lastMeta||computeLayoutMeta();
+        const target=Math.max(1,parseInt($('targetPages').value)||1);
+        im.qty = state.fillMode==='mixed' ? target : (meta.cellsPerPage||1)*target;
+        renderImageList(); refreshAll();
+        toast(t.toastFullFilled.replace('{name}', im.name).replace('{n}', target));
+        break;
+      }
+      case 'remove':
+        URL.revokeObjectURL(im.url);
+        state.images=state.images.filter(x=>x!==im);
+        imgRowEls.delete(im.id);
+        renderImageList(); refreshAll();
+        break;
+      case 'dec': im.qty=Math.max(0,im.qty-1); renderImageList(); refreshAll(); break;
+      case 'inc': im.qty+=1; renderImageList(); refreshAll(); break;
+      case 'reset': im.zoom=1; im.offX=0; im.offY=0; im.rotation=0; renderImageList(); refreshAll(); break;
+      case 'autocrop': im.aiStatus='detecting'; renderImageList(); autoCropImage(im); break;
+      case 'removebg': if(pickForAssignImg(im,t)) return; removeBgImage(im); break;
+      case 'restoreOrig':
+        if(im.origImg){ im.img=im.origImg; im.url=im.origImg.src; }
+        im.zoom=1; im.offX=0; im.offY=0; im.rotation=0; im.aiStatus=null; im.bgStatus=null;
+        renderImageList(); refreshAll();
+        break;
     }
-    thumb.onclick=()=>{ if(pickForAssign()) return; im.open=!im.open; renderImageList(); };
-    row.querySelector('[data-act="adjust"]').onclick=()=>{ if(pickForAssign()) return; im.open=!im.open; renderImageList(); };
-    row.querySelector('[data-act="fillsheets"]').onclick=()=>{
-      const meta=lastMeta||computeLayoutMeta();
-      const target=Math.max(1,parseInt($('targetPages').value)||1);
-      im.qty = state.fillMode==='mixed' ? target : (meta.cellsPerPage||1)*target;
-      renderImageList(); refreshAll();
-      toast(t.toastFullFilled.replace('{name}', im.name).replace('{n}', target));
-    };
-    row.querySelector('[data-act="remove"]').onclick=()=>{ URL.revokeObjectURL(im.url); state.images=state.images.filter(x=>x!==im); renderImageList(); refreshAll(); };
-    row.querySelector('[data-act="dec"]').onclick=()=>{ im.qty=Math.max(0,im.qty-1); renderImageList(); refreshAll(); };
-    row.querySelector('[data-act="inc"]').onclick=()=>{ im.qty+=1; renderImageList(); refreshAll(); };
-    row.querySelector('.qty-stepper input').oninput=e=>{ im.qty=Math.max(0,parseInt(e.target.value)||0); refreshAll(); };
-    const rt=row.querySelector('[data-act="rotation"]'); if(rt) rt.oninput=e=>{ im.rotation=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.rotation.toFixed(0)+'°'; refreshPreviewOnly(); };
-    const zr=row.querySelector('[data-act="zoom"]'); if(zr) zr.oninput=e=>{ im.zoom=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.zoom.toFixed(2)+'×'; refreshPreviewOnly(); };
-    const ox=row.querySelector('[data-act="offX"]'); if(ox) ox.oninput=e=>{ im.offX=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.offX.toFixed(2); refreshPreviewOnly(); };
-    const oy=row.querySelector('[data-act="offY"]'); if(oy) oy.oninput=e=>{ im.offY=parseFloat(e.target.value); e.target.nextElementSibling.textContent=im.offY.toFixed(2); refreshPreviewOnly(); };
-    const rs=row.querySelector('[data-act="reset"]'); if(rs) rs.onclick=()=>{ im.zoom=1; im.offX=0; im.offY=0; im.rotation=0; renderImageList(); refreshAll(); };
-    const ac=row.querySelector('[data-act="autocrop"]'); if(ac) ac.onclick=async()=>{ im.aiStatus='detecting'; renderImageList(); await autoCropImage(im); };
-    const rb=row.querySelector('[data-act="removebg"]'); if(rb) rb.onclick=async()=>{ if(pickForAssign()) return; await removeBgImage(im); };
-    const ro=row.querySelector('[data-act="restoreOrig"]'); if(ro) ro.onclick=()=>{
-      if(im.origImg){ im.img=im.origImg; im.url=im.origImg.src; }
-      im.zoom=1; im.offX=0; im.offY=0; im.rotation=0; im.aiStatus=null; im.bgStatus=null;
-      renderImageList(); refreshAll();
-    };
-    list.appendChild(row);
+  });
+  list.addEventListener('input',e=>{
+    const row=e.target.closest('.img-row');
+    if(!row) return;
+    const im=state.images.find(x=>x.id===row.dataset.id);
+    if(!im) return;
+    if(e.target.matches('.qty-stepper input')){ im.qty=Math.max(0,parseInt(e.target.value)||0); refreshAll(); return; }
+    const act=e.target.dataset.act;
+    const label=e.target.nextElementSibling;
+    if(act==='rotation'){ im.rotation=parseFloat(e.target.value); if(label) label.textContent=im.rotation.toFixed(0)+'°'; refreshPreviewOnly(); }
+    else if(act==='zoom'){ im.zoom=parseFloat(e.target.value); if(label) label.textContent=im.zoom.toFixed(2)+'×'; refreshPreviewOnly(); }
+    else if(act==='offX'){ im.offX=parseFloat(e.target.value); if(label) label.textContent=im.offX.toFixed(2); refreshPreviewOnly(); }
+    else if(act==='offY'){ im.offY=parseFloat(e.target.value); if(label) label.textContent=im.offY.toFixed(2); refreshPreviewOnly(); }
+  });
+}
+
+function renderImageList(){
+  const list=$('imgList');
+  const lang = state.lang || 'id';
+  const t = TRANSLATIONS[lang];
+  bindImgListDelegation();
+  if(!state.images.length){
+    imgRowEls.clear();
+    list.innerHTML=`<div class="empty-imgs"><div class="ei">🖼️</div><p>${lang==='id'?'Belum ada foto dimuat':'No photos loaded yet'}</p></div>`;
+    return;
+  }
+  if(list.querySelector('.empty-imgs')) list.innerHTML='';
+
+  const currentIds=new Set(state.images.map(im=>im.id));
+  for(const [id,row] of imgRowEls){
+    if(!currentIds.has(id)){ row.remove(); imgRowEls.delete(id); }
+  }
+
+  let prevEl=null;
+  state.images.forEach(im=>{
+    let row=imgRowEls.get(im.id);
+    if(!row){
+      row=buildImgRow(im,t);
+      imgRowEls.set(im.id,row);
+    }
+    updateImgRow(row,im,t);
+    if(prevEl){ if(prevEl.nextSibling!==row) list.insertBefore(row,prevEl.nextSibling); }
+    else if(list.firstChild!==row) list.insertBefore(row,list.firstChild);
+    if(!row.isConnected) list.appendChild(row);
+    prevEl=row;
   });
 }
 function bgBadge(status){
@@ -1891,8 +2008,42 @@ function aiCanvasToImage(canvas){
 /* Cache of url -> Image so undo/redo can restore auto-cropped photos synchronously
    (undo snapshots only store the url string, since Image elements can't be JSON-serialized) */
 const aiImageCache=new Map();
+const AI_CACHE_HARD_CAP=120; /* safety net so cache can never grow unbounded even if pruning is skipped somewhere */
 
+/* Frees entries in aiImageCache that are no longer reachable from either the live
+   state.images list or any snapshot still sitting in the undo/redo stacks. Each entry
+   is a full-resolution data: URL (can be tens of MB for large photos), so leaving old
+   ones behind after every AI auto-crop / remove-bg call is the main cause of the app
+   slowly running out of memory during long editing sessions. Safe to call often. */
+function pruneAiImageCache(){
+  const reachable=new Set();
+  state.images.forEach(im=>{ reachable.add(im.url); if(im.origImg && im.origImg.src) reachable.add(im.origImg.src); });
+  const scanStack=stack=>{
+    stack.forEach(snapStr=>{
+      try{
+        const snap=JSON.parse(snapStr);
+        if(snap.imageQtys) snap.imageQtys.forEach(iq=>{ if(iq.imgUrl) reachable.add(iq.imgUrl); });
+      }catch(e){ /* ignore malformed snapshot */ }
+    });
+  };
+  scanStack(undoStack); scanStack(redoStack);
+  for(const key of aiImageCache.keys()){
+    if(!reachable.has(key)) aiImageCache.delete(key);
+  }
+  /* Hard cap as a last resort in case something still holds more than expected */
+  while(aiImageCache.size>AI_CACHE_HARD_CAP){
+    const oldestKey=aiImageCache.keys().next().value;
+    if(oldestKey===undefined) break;
+    aiImageCache.delete(oldestKey);
+  }
+}
 
+/* Explicitly release a canvas's pixel backing store. Setting width/height to 0 forces
+   the browser to drop the (often large) raster buffer immediately instead of waiting
+   for GC, which matters a lot when exporting many high-DPI pages back to back. */
+function freeCanvas(cv){
+  try{ cv.width=0; cv.height=0; }catch(e){ /* ignore */ }
+}
 
 async function autoCropImage(im){
   if(!window.faceAI){ toast(TRANSLATIONS[state.lang||'id'].toastAiModuleNotLoaded); im.aiStatus='fail'; renderImageList(); return false; }
@@ -1950,6 +2101,7 @@ async function autoCropImage(im){
   offX=Math.max(-1,Math.min(1,offX)); offY=Math.max(-1,Math.min(1,offY));
 
   const correctedImg=await aiCanvasToImage(rotated.canvas);
+  freeCanvas(rotated.canvas);
   aiImageCache.set(correctedImg.src, correctedImg);
 
   im.img=correctedImg; im.url=correctedImg.src;
@@ -3503,6 +3655,7 @@ $('btnDlPage').onclick=async()=>{
   const filenames=buildPageFilenames(meta);
   const cv=renderPageCanvas(meta,state.currentPage,dpi);
   await downloadCanvas(cv,filenames[state.currentPage],dpi);
+  freeCanvas(cv);
   toast(TRANSLATIONS[state.lang||'id'].toastDlPage);
 };
 
@@ -3517,6 +3670,7 @@ $('btnDlAll').onclick=async()=>{
     for(let i=0;i<meta.pages.length;i++){
       const cv=renderPageCanvas(meta,i,dpi);
       await downloadCanvas(cv,filenames[i],dpi);
+      freeCanvas(cv);
       if(i<meta.pages.length-1) await new Promise(r=>setTimeout(r,220));
     }
     toast(TRANSLATIONS[state.lang||'id'].toastAllPagesDownloaded.replace('{n}', meta.pages.length));
@@ -3539,6 +3693,7 @@ $('btnDlAllZip').onclick=async()=>{
       const cv=renderPageCanvas(meta,i,dpi);
       const {blob,ext}=await canvasToDpiBlob(cv,dpi);
       zip.file(`${filenames[i]}.${ext}`,blob);
+      freeCanvas(cv);
       await new Promise(r=>setTimeout(r,0));
     }
     const zipBlob=await zip.generateAsync({type:'blob'});
@@ -3567,6 +3722,7 @@ $('btnExportPdfPage').onclick=async()=>{
     const doc=new jsPDF({orientation, unit:'mm', format:[meta.paperW,meta.paperH]});
     const cv=renderPageCanvas(meta,state.currentPage,dpi);
     const data=cv.toDataURL('image/jpeg',0.95);
+    freeCanvas(cv);
     doc.addImage(data,'JPEG',0,0,meta.paperW,meta.paperH);
     doc.save(`${filenames[state.currentPage]}.pdf`);
     toast(TRANSLATIONS[state.lang||'id'].toastPdfPageSuccess);
@@ -3590,6 +3746,7 @@ $('btnExportPdf').onclick=async()=>{
     for(let p=0;p<meta.pages.length;p++){
       const cv=renderPageCanvas(meta,p,dpi);
       const data=cv.toDataURL('image/jpeg',0.95);
+      freeCanvas(cv);
       if(p>0) doc.addPage([meta.paperW,meta.paperH],orientation);
       doc.addImage(data,'JPEG',0,0,meta.paperW,meta.paperH);
       await new Promise(r=>setTimeout(r,0));
