@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Auto PasFoto Layout — Tata Letak Cetak Pas Photo</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3C%21--%20background%20--%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22%230d0f14%22/%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22none%22%20stroke%3D%22%2300e5b0%22%20stroke-width%3D%222%22/%3E%3C%21--%20photo%20card%20--%3E%3Crect%20x%3D%2216%22%20y%3D%2212%22%20width%3D%2232%22%20height%3D%2240%22%20rx%3D%223%22%20fill%3D%22%23161a23%22%20stroke%3D%22%2300e5b0%22%20stroke-width%3D%222.2%22/%3E%3C%21--%20corner%20crop%20marks%20%28passport%20photo%20framing%20cue%29%20--%3E%3Cpath%20d%3D%22M12%2016%20v-4%20h4%22%20fill%3D%22none%22%20stroke%3D%22%23ffc94d%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M52%2016%20v-4%20h-4%22%20fill%3D%22none%22%20stroke%3D%22%23ffc94d%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M12%2048%20v4%20h4%22%20fill%3D%22none%22%20stroke%3D%22%23ffc94d%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M52%2048%20v4%20h-4%22%20fill%3D%22none%22%20stroke%3D%22%23ffc94d%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22/%3E%3C%21--%20portrait%3A%20head%20%2B%20shoulders%20silhouette%20--%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2227%22%20r%3D%226.2%22%20fill%3D%22%2300e5b0%22/%3E%3Cpath%20d%3D%22M20.5%2047c0-7.2%205.1-12%2011.5-12s11.5%204.8%2011.5%2012%22%20fill%3D%22%2300e5b0%22/%3E%3C/svg%3E">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- Font Google dihapus utk mode offline. Kalau mau font identik, taruh file .woff2 + @font-face
+     lokal di sini secara manual. Tanpa ini, browser otomatis pakai font sistem (fallback aman). -->
+<script src="libs/jspdf.umd.min.js"></script>
+<script src="libs/jszip.min.js"></script>
 <style>
 :root{
   --bg:#0d0f14;--surface:#161a23;--surface2:#1e2330;--border:#2a3045;
@@ -570,7 +571,7 @@ select{cursor:pointer}
      Loaded as a module; exposes window.faceAI for the main script.
      ================================================================ -->
 <script type="module">
-import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+import { FaceLandmarker, FilesetResolver } from "./libs/mediapipe/vision_bundle.mjs";
 
 function setAiStatus(msg){
   const el = document.getElementById('aiEngineStatus');
@@ -583,11 +584,11 @@ window.faceAI.ready = (async () => {
   try{
     setAiStatus('⏳ Memuat model deteksi wajah…');
     const vision = await FilesetResolver.forVisionTasks(
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+      "./libs/mediapipe/wasm"
     );
     const model = await FaceLandmarker.createFromOptions(vision, {
       baseOptions: {
-        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+        modelAssetPath: "./libs/mediapipe/face_landmarker.task",
         delegate: "GPU"
       },
       runningMode: "IMAGE",
@@ -618,11 +619,13 @@ window.faceAI.detect = function(imgEl){
      AI BACKGROUND REMOVAL ENGINE (MediaPipe ImageSegmenter — selfie model)
      Jalan 100% di browser (WASM), tidak ada foto yang dikirim ke server.
      Pakai package @mediapipe/tasks-vision yang sama dengan modul face-detection
-     di atas, supaya lebih reliable ketimbang library pihak ketiga lain.
+     di atas (path lokal libs/mediapipe), supaya konsisten dengan mode offline.
+     PENTING: taruh file model "selfie_segmenter.tflite" di folder
+     libs/mediapipe/ (lihat catatan di bawah untuk link download-nya).
      Loaded as a module; exposes window.bgRemovalAI for the main script.
      ================================================================ -->
 <script type="module">
-import { ImageSegmenter, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+import { ImageSegmenter, FilesetResolver } from "./libs/mediapipe/vision_bundle.mjs";
 
 function setBgStatusMsg(msg){
   const el = document.getElementById('aiEngineStatus');
@@ -635,11 +638,11 @@ window.bgRemovalAI.ready = (async () => {
   try{
     setBgStatusMsg('⏳ Memuat model hapus background…');
     const vision = await FilesetResolver.forVisionTasks(
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+      "./libs/mediapipe/wasm"
     );
     const model = await ImageSegmenter.createFromOptions(vision, {
       baseOptions: {
-        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite",
+        modelAssetPath: "./libs/mediapipe/selfie_segmenter.tflite",
         delegate: "GPU"
       },
       runningMode: "IMAGE",
@@ -649,7 +652,7 @@ window.bgRemovalAI.ready = (async () => {
     window.bgRemovalAI.model = model;
     setBgStatusMsg('✅ Model hapus background siap');
   }catch(err){
-    setBgStatusMsg('❌ Gagal memuat model hapus background (cek koneksi internet)');
+    setBgStatusMsg('❌ Gagal memuat model hapus background (cek file libs/mediapipe/selfie_segmenter.tflite)');
     console.error('bgRemovalAI init error:', err);
   }
 })();

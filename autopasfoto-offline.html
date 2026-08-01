@@ -571,7 +571,7 @@ select{cursor:pointer}
      Loaded as a module; exposes window.faceAI for the main script.
      ================================================================ -->
 <script type="module">
-import { FaceLandmarker, FilesetResolver } from "libs/mediapipe/vision_bundle.mjs";
+import { FaceLandmarker, FilesetResolver } from "./libs/mediapipe/vision_bundle.mjs";
 
 function setAiStatus(msg){
   const el = document.getElementById('aiEngineStatus');
@@ -584,11 +584,11 @@ window.faceAI.ready = (async () => {
   try{
     setAiStatus('⏳ Memuat model deteksi wajah…');
     const vision = await FilesetResolver.forVisionTasks(
-      "libs/mediapipe/wasm"
+      "./libs/mediapipe/wasm"
     );
     const model = await FaceLandmarker.createFromOptions(vision, {
       baseOptions: {
-        modelAssetPath: "libs/mediapipe/face_landmarker.task",
+        modelAssetPath: "./libs/mediapipe/face_landmarker.task",
         delegate: "GPU"
       },
       runningMode: "IMAGE",
@@ -625,7 +625,7 @@ window.faceAI.detect = function(imgEl){
      Loaded as a module; exposes window.bgRemovalAI for the main script.
      ================================================================ -->
 <script type="module">
-import { ImageSegmenter, FilesetResolver } from "libs/mediapipe/vision_bundle.mjs";
+import { ImageSegmenter, FilesetResolver } from "./libs/mediapipe/vision_bundle.mjs";
 
 function setBgStatusMsg(msg){
   const el = document.getElementById('aiEngineStatus');
@@ -638,11 +638,11 @@ window.bgRemovalAI.ready = (async () => {
   try{
     setBgStatusMsg('⏳ Memuat model hapus background…');
     const vision = await FilesetResolver.forVisionTasks(
-      "libs/mediapipe/wasm"
+      "./libs/mediapipe/wasm"
     );
     const model = await ImageSegmenter.createFromOptions(vision, {
       baseOptions: {
-        modelAssetPath: "libs/mediapipe/selfie_segmenter.tflite",
+        modelAssetPath: "./libs/mediapipe/selfie_segmenter.tflite",
         delegate: "GPU"
       },
       runningMode: "IMAGE",
