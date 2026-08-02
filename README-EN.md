@@ -19,7 +19,7 @@ Single HTML file, no installation required — just open it in a modern browser 
 - Several sheet-filling modes: Standard, Bulk (1 sheet = 1 file), Mixed Size (skyline packing), Mixed Photos + Mixed Size, Custom Layout (manual photo placement), and **Custom Layout (Mixed Size)** — differently-sized boxes arranged manually, still assisted by the same automatic packing used in Mixed Size mode.
 - Manual layout editing: drag/rotate boxes, adjust zoom & crop position per photo.
 - Cut guides, frame color, Polaroid/Frame presets.
-- Export to **PDF**, **PNG/JPG per page** (or **ZIP of all pages**), with your own choice of DPI & format. There's also **Export Photos per-Box** — download each individual photo already cropped to its box size (see the "Export Layout" section below).
+- Export to **PDF**, **PNG/JPG per page** (or **ZIP of all pages**), with your own choice of DPI & format. You can also export just a **specific page or page range** (e.g. `1,3,5-7`) as PDF, ZIP, or separate image files. There's also **Export Photos per-Box** — download each individual photo already cropped to its box size (see the "Export Layout" section below).
 - Undo/Redo (Ctrl+Z / Ctrl+Y), Light/Dark mode, ID/EN language switch.
 - Export & Import layout settings to/from a **JSON** file.
 
@@ -147,13 +147,24 @@ Common causes of failure:
 
 ## Export Layout (PDF / Image / Per-Box Photo)
 
-The **"Export"** card in the right panel (below Preview) holds resolution & format settings, plus three groups of download buttons.
+The **"Export"** card in the right panel (below Preview) holds resolution & format settings, plus four groups of download buttons.
 
 ### Resolution & Format Settings
 
 - **Resolusi (DPI)** — dropdown: 72 (screen) / 150 (draft) / 300 (standard print, default) / 450 / 600 (high print) / **Custom…** (free value 30–1200 dpi via the "DPI Custom" field next to it). This DPI applies to every download (page images, PDF, and per-box photo export) — the on-screen preview itself always renders at a fixed light-weight resolution (150dpi base × devicePixelRatio) and doesn't change with the chosen export DPI.
 - **Format Unduh Gambar** (Image Download Format) — PNG (lossless, supports transparency) or JPG. Choosing JPG reveals a **Kualitas JPG** (JPG Quality) field (10–100, default 92).
 - Both settings are also saved/loaded via "Export/Import Pengaturan" (JSON) — see the section below.
+
+### 🔢 Export Specific Pages / Range
+
+A dedicated input field lets you export only a chosen set of pages instead of the whole layout — handy for re-printing a single page, or exporting just a few pages out of a large multi-page layout.
+
+- **Nomor Halaman** (Page Number) field — type a comma-separated list of page numbers and/or ranges, e.g. `1,3,5-7` (pages 1, 3, 5, 6, 7). Whitespace around commas/hyphens is ignored, and duplicate/overlapping entries are automatically de-duplicated and sorted. Leave it empty and use the "All Pages" buttons below instead.
+- **⬇ PDF** — exports only the listed pages into a single multi-page PDF (in ascending page order, regardless of the order typed).
+- **⬇ ZIP** — exports only the listed pages as images, packaged into one ZIP file.
+- **⬇ Terpisah** (Separate) — exports only the listed pages as separate image files, one download per page (same behavior as "⬇ Semua Halaman" but limited to the listed pages).
+- If the field is empty, contains an unrecognized token, or every listed page number is out of range (e.g. higher than the total page count), a validation toast is shown and nothing is exported.
+- Filenames get a page-range tag appended, e.g. `pasfoto-halaman-1-3_5.pdf` / `...-1-3_5.zip`, with consecutive pages collapsed into a `start-end` range and separated by `_`.
 
 ### 📄 Export PDF
 
@@ -212,6 +223,7 @@ The **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** (Export/Import Set
   - Inside `removeBackground()`, the model's output mask (low resolution) is upscaled **separately** from the original photo (which is always drawn at full resolution), then combined as the alpha channel — so photo sharpness doesn't degrade to match the mask's resolution.
 - `drawCoverRotated(ctx,img,dx,dy,dw,dh,zoom,offX,offY,rotDeg)` — the single drawing function used for the **"Rotate (Tilt)"** slider (used for page rendering, the live preview, and PDF/PNG export alike, so all three stay consistent). The photo is drawn `cover`-fit and then rotated by `rotDeg` degrees around the box's center, `clip()`-ed to the box area (dw×dh) so the tilt never bleeds onto the frame or neighboring boxes. Before rotating, the destination rect (dw,dh) is auto-scaled by a factor `s = |cos θ| + max(dw/dh, dh/dw) × |sin θ|` — the minimum scale needed for the rotated rect to still fully cover the original (dw×dh) box at any angle, preventing uncovered box corners (the "diagonal white triangle" bug). The existing `zoom`/`offX`/`offY` crop values are then applied as-is on top of that already-scaled rect.
 - Export: `getSelectedDPI()`/`canvasToDpiBlob()` apply the chosen DPI and format (PNG/JPG+quality) to a canvas before it's downloaded; `downloadCanvas()` wraps that into an `<a download>` trigger. `buildPageFilenames()` decides each page's filename (follows the source photo's name for Bulk/Mixed Size modes, falls back to `pasfoto-halaman-N` for other modes). For per-box photo export: `buildCropExportPlan(meta,scope)` collects the photo-bearing cells for the given scope (`page`/`all`/`selected`), skips duplicate cells via `cellCropSignature()` (a signature built from the photo id + box/photo rotation & flip + zoom/pan/tilt, rounded to 2 decimals) so boxes that would render byte-for-byte identical are only exported once, then builds each filename with `sanitizeFilename()` + `formatBoxSizeTag()` (e.g. `PhotoName - kotak_30x40mm`, with a `hal0N_` prefix when the scope spans multiple pages).
+- Page-range export: `parsePageRangeInput(str,maxPages)` parses the `1,3,5-7`-style text field into a sorted, de-duplicated array of 0-indexed page indices, clamping to `[1..maxPages]` and returning `null` for empty/unparseable/fully-out-of-range input (which the button handlers use to show a validation toast instead of exporting). `formatPageRangeTag(indices)` turns that array back into a compact filename tag, collapsing consecutive pages into `start-end` runs joined by `_` (e.g. `[0,1,2,4]` → `1-3_5`). The three range buttons (`btnExportPdfRange`/`btnDlRangeZip`/`btnDlRange`) otherwise reuse the exact same `renderPageCanvas()`/`canvasToDpiBlob()`/`downloadCanvas()` pipeline as the "All Pages" buttons, just iterating over the parsed index list instead of every page.
 
 ---
 
@@ -220,6 +232,7 @@ The **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** (Export/Import Set
 - **Left panel widened** from 400px → 460px, so labels in the Auto Crop AI card (e.g. "Margin Atas (Ubun ke Tepi)") no longer get clipped/wrapped onto 2 lines.
 - **Sharper preview canvas rendering**: preview raster resolution raised from a base of 150dpi to 300dpi, multiplied further by the screen's `devicePixelRatio` (capped at 2×) — so it no longer looks blurry on retina/high-DPI screens or when zoomed in. This does not affect PDF/PNG export resolution (those already use whatever DPI you select separately).
 - **Fixed the "Rotate (Tilt)" slider — the diagonal white/background triangles at the corners are now gone.** This slider (in the per-photo ⚙ panel, including on top of an Auto Crop Face AI result) smoothly tilts the photo by degree inside its box. Previously, tilting the photo at any angle left the box's own corners no longer covered by the photo, so the background color (`photoBgColor`) or plain white showed through diagonally at the corners. The photo's zoom is now auto-compensated based on the tilt angle — the more it's tilted, the more it's scaled up just enough — so the box stays fully covered at any angle, the same way the Straighten tool works in Lightroom/Photoshop.
+- **Fixed Background Removal (✂️) always failing.** A variable-scoping bug inside `window.bgRemovalAI.removeBackground()` made the function throw on every call (even on a fully successful segmentation), so the ✂️ button always ended up showing the `✂️⚠` fail badge/toast. The working canvases are now declared at function scope instead of inside the `try{}` block, so the `finally{}` cleanup can actually reach them — the feature now completes and returns the transparent-background result as intended.
 
 ---
 
