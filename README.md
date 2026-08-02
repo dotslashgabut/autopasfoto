@@ -16,10 +16,10 @@ Satu file HTML, tidak perlu instalasi apa pun — cukup dibuka di browser modern
 
 - Upload banyak foto sekaligus (file atau folder).
 - Atur ukuran kertas, ukuran kotak foto, jarak antar kotak, margin dalam/luar.
-- Beberapa mode pengisian lembar: Standar, Bulk (1 lembar = 1 file), Mixed Size (skyline packing).
+- Beberapa mode pengisian lembar: Standar, Bulk (1 lembar = 1 file), Ukuran Beragam/Mixed Size (skyline packing), Campur Foto + Mixed Size, Custom Layout (isi foto manual), dan **Custom Layout (Mixed Size)** — kotak-kotak berbeda ukuran disusun manual dengan bantuan packing otomatis yang sama seperti mode Mixed Size.
 - Edit layout manual: geser/putar kotak, atur zoom & posisi crop per foto.
 - Panduan potong (guide), warna bingkai, preset Polaroid/Frame.
-- Export ke **PDF** dan **PNG per halaman**, atau **ZIP semua halaman**.
+- Export ke **PDF**, **PNG/JPG per halaman** (atau **ZIP semua halaman**), dengan DPI & format pilihan sendiri. Tersedia juga **Export Foto per-Kotak** — unduh tiap foto individual sudah terpotong sesuai ukuran kotaknya (lihat section "Export Layout" di bawah).
 - Undo/Redo (Ctrl+Z / Ctrl+Y), mode Terang/Gelap, Bahasa ID/EN.
 - Export & Import pengaturan layout ke/dari file **JSON**.
 
@@ -36,6 +36,8 @@ Bar toolbar di bawah header (bisa disembunyikan/ditampilkan lewat tombol **🧰*
 - **🖐️ Hand Tool** — mode seret kanvas untuk menggeser tampilan (klik kanan+seret juga selalu bisa dipakai kapan saja, di mode manapun).
 - **Zoom Tampilan Lembar** — tombol −/+ dan indikator **Fit ⇄ 100%** (klik untuk beralih); juga bisa pakai Ctrl+Scroll pada preview, atau Ctrl +/Ctrl −/Ctrl 0 dari keyboard.
 - **➕ Foto + / ➖ Foto -** — perbesar/perkecil zoom foto pada kotak terpilih; **🎯 Reset Foto Pan** mengembalikan posisi geser (pan) ke tengah.
+- **🤖 Auto Crop Terpilih** — Auto Face Crop (AI) khusus untuk kotak yang sedang diseleksi di halaman aktif (boleh multi-kotak, boleh campuran beberapa ukuran sekaligus). Tiap kotak dipas-kan otomatis memakai aspect rasio ukurannya **masing-masing** (termasuk kalau kotak diputar manual 90°/270°), jadi hasilnya tetap benar walau seleksinya campuran ukuran berbeda — cocok dipakai pada layout Mixed Size / Custom Layout (Mixed Size). Klik tombol untuk membuka panel slider **Kepala / Margin / Rambut**, lalu tekan **🤖 Jalankan**.
+- **⚙ Adjust Terpilih** — panel slider **Zoom / Pan X / Pan Y / Rotate** untuk mengatur crop foto secara manual pada semua kotak yang sedang diseleksi sekaligus (tanpa perlu buka panel ⚙ satu-satu per foto); ada tombol **↺ Reset** untuk mengembalikan seleksi ke crop default.
 - **Snap Kotak** — kotak otomatis "nempel" ke kotak lain saat digeser.
 - **Snap Grid** — nempel ke grid dengan jarak (mm) yang bisa diatur di kolom angka di sebelahnya.
 - **📐 Snap Cut-Guide** — snap khusus ke posisi garis potong tengah-jarak, cocok dipakai bersama Cut Guide Style "Garis di Tengah Jarak" / "Tanda Potong di Tengah Jarak" agar jarak antar kotak tetap presisi sama dengan Box Spacing.
@@ -71,8 +73,17 @@ Cara kerja:
    - **Tinggi Kepala thd Kotak** — proporsi tinggi kepala terhadap tinggi kotak foto.
    - **Margin Atas** — jarak dari ubun-ubun ke tepi atas kotak.
    - **Estimasi Rambut di Atas Dahi** — kompensasi karena titik landmark dahi bukan ubun-ubun asli (rambut tidak terdeteksi model).
-4. Hasil crop otomatis mengikuti **ukuran Kotak Foto** yang sudah diatur di kartu "Ukuran Kotak Foto" — jadi tidak ada preset ukuran terpisah, semuanya konsisten dengan layout cetak yang sedang dibuat.
+4. Untuk layout dengan kotak **seragam** ukurannya, hasil crop otomatis mengikuti **ukuran Kotak Foto** yang sudah diatur di kartu "Ukuran Kotak Foto" — jadi tidak ada preset ukuran terpisah, semuanya konsisten dengan layout cetak yang sedang dibuat. Untuk layout dengan kotak **berbeda-beda ukuran** (Mixed Size / Custom Layout Mixed Size), lihat sub-bagian "Auto Crop untuk Kotak-Foto yang Berbeda Ukuran" di bawah.
 5. Nilai zoom & posisi pan yang dihasilkan langsung dipakai oleh sistem crop bawaan app utama (bisa disesuaikan manual lagi lewat tombol ⚙ seperti biasa).
+
+### Auto Crop untuk Kotak-Foto yang Berbeda Ukuran (Mixed Size)
+
+Kalau layout memakai mode **Mixed Size**, **Campur Foto + Mixed Size**, atau **Custom Layout (Mixed Size)** — di mana kotak foto tidak seragam dan tiap kotak bisa punya ukuran/aspect rasio sendiri — Auto Crop Wajah tetap bisa dipakai dan tetap menghasilkan crop yang pas untuk **masing-masing** ukuran, lewat dua jalur:
+
+1. **Per baris ukuran, dari kartu "Daftar Ukuran Kotak per Lembar"** — tiap baris ukuran (mis. 30×40mm) di panel Mode Pengisian Lembar punya tombol **🤖** sendiri. Klik untuk membuka panel slider Kepala/Margin/Rambut khusus baris itu (kalau tidak diisi, otomatis memakai nilai slider global di kartu Auto Crop), lalu tekan **"🤖 Auto Crop Ukuran W×H mm"**. Sistem mencari **semua kotak di semua halaman** yang ukuran on-page-nya cocok dengan baris ini (termasuk kalau posisinya diputar 90° oleh algoritma packing) dan meng-crop ulang foto di kotak-kotak tersebut sesuai aspect rasio baris itu — tanpa mengubah crop foto yang sama di kotak berukuran lain. Baris yang sama juga punya tombol **⚙** untuk mengatur Zoom/Pan/Rotate manual yang berlaku ke semua kotak berukuran itu sekaligus, plus tombol reset khusus baris tersebut.
+2. **Per seleksi kotak, dari toolbar edit kanvas** — tombol **🤖 Auto Crop Terpilih** (lihat section "Toolbar Edit Kanvas") meng-crop hanya kotak yang sedang diseleksi di halaman aktif, masing-masing memakai aspect rasio ukurannya sendiri — cocok untuk seleksi campuran beberapa ukuran kotak sekaligus, atau untuk mengoreksi ulang sebagian kotak saja. Tombol **⚙ Adjust Terpilih** di sebelahnya untuk penyesuaian manual Zoom/Pan/Rotate ke seleksi yang sama.
+
+Karena hasil crop untuk kedua jalur ini disimpan sebagai **override per-kotak** (bukan menimpa nilai zoom/pan global milik foto), satu foto yang sama bisa dipakai di beberapa kotak berbeda ukuran dalam layout yang sama — dan masing-masing kotak tetap terframe dengan benar sesuai ukurannya sendiri-sendiri, tidak saling menimpa.
 
 Kontrol per foto:
 | Tombol | Fungsi |
@@ -134,12 +145,50 @@ Penyebab umum bila gagal:
 
 ---
 
+## Export Layout (PDF / Gambar / Foto per-Kotak)
+
+Kartu **"Export"** di panel kanan (di bawah Preview) berisi pengaturan resolusi & format, plus tiga kelompok tombol unduh.
+
+### Pengaturan Resolusi & Format
+
+- **Resolusi (DPI)** — dropdown 72 (layar) / 150 (draft) / 300 (cetak standar, default) / 450 / 600 (cetak tinggi) / **Custom…** (nilai bebas 30–1200 dpi lewat kolom "DPI Custom" di sebelahnya). DPI ini berlaku untuk semua hasil unduhan (gambar halaman, PDF, dan export foto per-kotak) — preview di layar sendiri tetap dirender ringan di resolusi tetap (150dpi dasar × devicePixelRatio), tidak ikut berubah mengikuti DPI export yang dipilih.
+- **Format Unduh Gambar** — PNG (lossless, mendukung transparansi) atau JPG. Memilih JPG memunculkan kolom **Kualitas JPG** (10–100, default 92).
+- Kedua pengaturan ini ikut tersimpan/dimuat lewat "Export/Import Pengaturan" (JSON) — lihat bagian di bawah.
+
+### 📄 Export PDF
+
+- **⬇ Halaman Ini** — export halaman aktif sebagai satu file PDF.
+- **⬇ Semua Halaman** — export seluruh halaman jadi satu file PDF multi-halaman, tiap halaman mengikuti ukuran kertas yang dipilih.
+
+### 🖼️ Export Gambar (PNG/JPG)
+
+- **⬇ Halaman Ini** — unduh halaman aktif sebagai satu file gambar (PNG/JPG sesuai format terpilih).
+- **⬇ Semua Halaman** — unduh tiap halaman sebagai file gambar terpisah, satu per satu.
+- **⬇ Semua Halaman (ZIP)** — unduh semua halaman sekaligus, dikemas dalam satu file ZIP.
+- Nama file gambar/PDF halaman mengikuti nama foto sumber untuk mode **Bulk** dan **Mixed Size** (karena tiap lembar = 1 foto), dengan suffix `-2`, `-3`, dst. kalau ada nama sama. Untuk mode lain (Standar, Custom Layout, dll. — di mana 1 lembar bisa berisi banyak foto berbeda) nama file jatuh ke default `pasfoto-halaman-N`.
+
+### ✂️ Export Foto (Ukuran Crop/Kotak) — fitur baru
+
+Kelompok export baru yang mengunduh **foto individual, bukan halaman komposit** — tiap foto diekspor sudah terpotong (crop) persis sesuai ukuran kotaknya masing-masing, termasuk kalau layout memakai kotak berbeda-beda ukuran (Mixed Size). Cocok untuk kebutuhan seperti mengirim file lepas per foto ke studio cetak lain, alih-alih lembar gabungan.
+
+- **⬇ Halaman Ini** — export semua foto di halaman aktif.
+- **⬇ Semua Halaman** — export semua foto dari semua halaman, satu per satu.
+- **⬇ Semua Foto (ZIP)** — sama seperti di atas, tapi dikemas dalam satu file ZIP.
+- **⬇ Kotak Terpilih** — hanya foto dari kotak yang sedang diseleksi di halaman aktif.
+
+Detail penamaan & dedup:
+- Pola nama file: `[hal0N_]NamaFoto[-2] - kotak_LxTmm` — prefiks `hal0N_` hanya muncul kalau cakupan export mencakup lebih dari 1 halaman (Semua Halaman / ZIP); tag ukuran (mis. `30x40mm`) selalu mengikuti ukuran kotak asli foto tsb.
+- Kalau ada beberapa kotak yang **identik persis** (foto sumber sama, ukuran kotak sama, rotasi/flip sama, dan crop/zoom/pan/tilt sama) — misalnya hasil "isi penuh 1 halaman" bulk dengan 1 foto — hanya **1 file** yang diekspor untuk kombinasi itu, bukan diulang per kotak, supaya tidak menghasilkan banyak file duplikat identik. Kotak dengan ukuran atau crop yang berbeda tetap diekspor terpisah walau berasal dari foto sumber yang sama.
+
+---
+
 ## Export & Import Pengaturan (JSON)
 
 Tombol **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** menyimpan/memuat konfigurasi layout ke file `.json`, termasuk:
 
 - Ukuran kertas, kotak, gap, margin, warna, mode isi, guide, dll (semua pengaturan bawaan app).
 - 3 slider Auto Crop AI: `aiHeadRatio`, `aiTopMargin`, `aiHairExt`.
+- Pengaturan Export: **DPI** (termasuk nilai Custom), **Format Unduh Gambar** (PNG/JPG), dan **Kualitas JPG**.
 
 **Yang tidak ikut tersimpan:** daftar foto itu sendiri (file gambar) dan status AI per foto (`aiStatus` auto-crop maupun `bgStatus` hapus-background) — ini karena file gambar tidak bisa disematkan otomatis ke JSON pengaturan. Setelah reload halaman atau import settings, foto perlu di-upload ulang, lalu bisa dijalankan ulang "Auto Crop Semua Foto" / hapus background per foto bila perlu.
 
@@ -153,6 +202,7 @@ Tombol **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** menyimpan/memua
   - `aiTransformPoint()` — mentransformasi koordinat landmark ke sistem koordinat canvas hasil rotasi.
   - `autoCropImage(im)` — pipeline lengkap: deteksi → rotasi → hitung rect crop → konversi ke `zoom/offX/offY` sesuai skema `drawCover()` app utama.
   - `autoCropAllImages()` — batch semua foto.
+  - Untuk kotak berbeda ukuran (Mixed Size): `cellMatchesBoxSize()` mencocokkan ukuran on-page sebuah kotak (mendukung orientasi tertukar akibat rotasi packing, toleransi 0.05mm) dengan salah satu baris `state.mixedBoxes`; `findCellsForBoxSize()` mengumpulkan semua kotak di semua halaman yang cocok; `autoCropBoxSize()` menjalankan auto crop untuk kumpulan tersebut (dipanggil dari tombol 🤖 per baris ukuran); `autoCropSelectedCells()` melakukan hal serupa tapi untuk `state.selection` di halaman aktif (dipanggil dari tombol toolbar 🤖 Auto Crop Terpilih), dengan aspect rasio per kotak diambil dari `getCellEffectiveRect()` (memperhitungkan rotasi manual kotak). Hasilnya disimpan sebagai override di `state.cellCropOverrides['pageIdx:cellIdx']` — bukan menimpa `im.zoom/offX/offY` milik foto — supaya satu foto yang dipakai di kotak-kotak berbeda ukuran tetap ter-crop independen per kotak.
 - Foto hasil auto-crop (sudah diputar) disimpan sebagai elemen `<img>` baru (dari `canvas.toDataURL()`), bukan menimpa foto asli. Foto asli tetap disimpan di `im.origImg` untuk keperluan tombol 🗘 dan deteksi ulang (deteksi selalu dijalankan dari foto asli, bukan hasil rotasi sebelumnya, supaya tidak terjadi akumulasi kesalahan rotasi).
 - `aiImageCache` (Map `url → Image`) menyimpan semua elemen `<img>` yang pernah dibuat, karena sistem Undo/Redo bawaan app menyimpan snapshot sebagai **string JSON** — objek `<img>` tidak bisa diserialisasi langsung ke JSON, jadi snapshot hanya menyimpan `url` (data-URL) dan mengambil kembali elemen `<img>`-nya dari cache saat undo/redo dijalankan.
 - Batas zoom UI bawaan app adalah `1×`–`3×` (tidak bisa "zoom out" di bawah crop cover default); jika area wajah yang dibutuhkan lebih lebar dari itu, nilai zoom otomatis dibatasi ke `1×` dan ditandai `🤖✓*`.
@@ -161,6 +211,7 @@ Tombol **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** menyimpan/memua
   - `bgBadge(status)` — render badge status (`processing`/`ok`/`fail`) di baris foto, berdampingan dengan `aiBadge(status)` milik auto-crop.
   - Di dalam `removeBackground()`, mask hasil model (resolusi rendah) di-upscale **terpisah** dari foto asli (yang tetap digambar di resolusi penuh), lalu digabung sebagai alpha channel — supaya ketajaman foto tidak ikut turun mengikuti resolusi mask.
 - `drawCoverRotated(ctx,img,dx,dy,dw,dh,zoom,offX,offY,rotDeg)` — fungsi gambar tunggal yang dipakai untuk slider **"Putar (Miring)"** (dipakai di render halaman, preview live, dan hasil export PDF/PNG, jadi semuanya konsisten). Foto digambar `cover`-fit lalu diputar `rotDeg` derajat di sekitar titik tengah kotak, dengan `clip()` ke area kotak (dw×dh) supaya kemiringan tidak bocor ke frame/kotak tetangga. Sebelum diputar, ukuran persegi tujuan (dw,dh) discale otomatis dengan faktor `s = |cos θ| + max(dw/dh, dh/dw) × |sin θ|` — rumus minimum supaya persegi yang sudah diputar itu tetap menutupi penuh kotak asli (dw×dh) di sudut berapa pun, mencegah sudut kotak yang tidak tertutup foto ("segitiga putih diagonal"). `zoom`/`offX`/`offY` (dari sistem crop bawaan) tetap dipakai apa adanya di atas rect yang sudah di-scale itu.
+- Export: `getSelectedDPI()`/`canvasToDpiBlob()` menerapkan DPI & format (PNG/JPG+quality) terpilih ke sebuah canvas sebelum diunduh; `downloadCanvas()` membungkusnya jadi trigger `<a download>`. `buildPageFilenames()` menentukan nama file per halaman (ikut nama foto sumber utk mode Bulk/Mixed Size, fallback `pasfoto-halaman-N` utk mode lain). Untuk export foto per-kotak: `buildCropExportPlan(meta,scope)` mengumpulkan sel-sel bergambar sesuai cakupan (`page`/`all`/`selected`), melewati sel duplikat lewat `cellCropSignature()` (signature dari id foto + rotasi/flip kotak & foto + zoom/pan/tilt, dibulatkan 2 desimal) supaya kotak yang hasilnya identik byte-per-byte hanya diekspor sekali, lalu menyusun nama file lewat `sanitizeFilename()` + `formatBoxSizeTag()` (mis. `NamaFoto - kotak_30x40mm`, dengan prefiks `hal0N_` kalau cakupannya multi-halaman).
 
 ---
 
