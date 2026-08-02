@@ -16,10 +16,10 @@ Single HTML file, no installation required — just open it in a modern browser 
 
 - Upload multiple photos at once (individual files or a whole folder).
 - Configure paper size, photo box size, spacing between boxes, inner/outer margins.
-- Several sheet-filling modes: Standard, Bulk (1 sheet = 1 file), Mixed Size (skyline packing).
+- Several sheet-filling modes: Standard, Bulk (1 sheet = 1 file), Mixed Size (skyline packing), Mixed Photos + Mixed Size, Custom Layout (manual photo placement), and **Custom Layout (Mixed Size)** — differently-sized boxes arranged manually, still assisted by the same automatic packing used in Mixed Size mode.
 - Manual layout editing: drag/rotate boxes, adjust zoom & crop position per photo.
 - Cut guides, frame color, Polaroid/Frame presets.
-- Export to **PDF** and **PNG per page**, or **ZIP of all pages**.
+- Export to **PDF**, **PNG/JPG per page** (or **ZIP of all pages**), with your own choice of DPI & format. There's also **Export Photos per-Box** — download each individual photo already cropped to its box size (see the "Export Layout" section below).
 - Undo/Redo (Ctrl+Z / Ctrl+Y), Light/Dark mode, ID/EN language switch.
 - Export & Import layout settings to/from a **JSON** file.
 
@@ -36,6 +36,8 @@ The toolbar bar under the header (can be hidden/shown with the **🧰** button i
 - **🖐️ Hand Tool** — drag-to-pan mode for the canvas view (right-click+drag also always works, in any mode).
 - **Sheet zoom controls** — −/+ buttons plus a **Fit ⇄ 100%** indicator (click to toggle); Ctrl+Scroll on the preview also zooms, as do Ctrl +/Ctrl −/Ctrl 0 on the keyboard.
 - **➕ Foto + / ➖ Foto -** — zoom the photo in/out within the selected box; **🎯 Reset Foto Pan** resets the pan position back to center.
+- **🤖 Auto Crop Terpilih** (Auto Crop Selected) — Auto Face Crop (AI) scoped only to the box(es) currently selected on the active page (can be multiple boxes, even a mix of different sizes at once). Each box is framed automatically using its **own** size/aspect ratio (accounting for a manual 90°/270° box rotation), so it stays correct even when the selection mixes different box sizes — ideal for Mixed Size / Custom Layout (Mixed Size) layouts. Click the button to open a **Kepala/Margin/Rambut** (Head/Margin/Hair) slider panel, then press **🤖 Jalankan** (Run).
+- **⚙ Adjust Terpilih** (Adjust Selected) — a **Zoom / Pan X / Pan Y / Rotate** slider panel to manually adjust the crop for every currently-selected box at once, without opening each photo's own ⚙ panel individually; includes a **↺ Reset** button to restore the selection to its default crop.
 - **Snap Kotak** (Snap Boxes) — boxes automatically snap to other boxes while dragging.
 - **Snap Grid** — snaps to a grid whose spacing (mm) is set in the number field next to it.
 - **📐 Snap Cut-Guide** — snaps specifically to mid-gap cut-guide positions, meant to be used together with the Cut Guide Style "Garis di Tengah Jarak" / "Tanda Potong di Tengah Jarak" (mid-gap line/cut-mark) so spacing between boxes stays exactly matched to Box Spacing.
@@ -71,8 +73,17 @@ How it works:
    - **Head Height vs. Box** — the proportion of head height relative to the photo box height.
    - **Top Margin** — the distance from the crown of the head to the box's top edge.
    - **Estimated Hair Above Forehead** — compensation since the forehead landmark point isn't the true crown of the head (hair isn't detected by the model).
-4. The auto-crop result follows whatever **Photo Box Size** is currently set in the "Ukuran Kotak Foto" (Photo Box Size) card — so there's no separate size preset; everything stays consistent with the print layout you're building.
+4. For layouts where every box is the **same** size, the auto-crop result follows whatever **Photo Box Size** is currently set in the "Ukuran Kotak Foto" (Photo Box Size) card — so there's no separate size preset; everything stays consistent with the print layout you're building. For layouts with **differently-sized** boxes (Mixed Size / Custom Layout Mixed Size), see the "Auto Crop for Differently-Sized Photo Boxes" subsection below.
 5. The resulting zoom and pan values are fed directly into the main app's built-in crop system (still fully adjustable manually via the usual ⚙ button).
+
+### Auto Crop for Differently-Sized Photo Boxes (Mixed Size)
+
+If the layout uses **Mixed Size**, **Mixed Photos + Mixed Size**, or **Custom Layout (Mixed Size)** mode — where photo boxes aren't uniform and each box can have its own size/aspect ratio — Auto Crop Face can still be used, producing a correctly-framed crop for **each** box size, through two paths:
+
+1. **Per size row, from the "Daftar Ukuran Kotak per Lembar" (Box Sizes per Sheet) card** — each size row (e.g. 30×40mm) in the Sheet-Filling Mode panel has its own **🤖** button. Click it to open a Head/Margin/Hair slider panel specific to that row (leave a slider unset and it falls back to the global Auto Crop card's slider value), then press **"🤖 Auto Crop Ukuran W×H mm"**. The app scans **every box on every page** whose on-page size matches this row (including boxes rotated 90° by the packing algorithm) and re-crops the assigned photo in each of those boxes to match that row's own aspect ratio — without touching the same photo's crop in any differently-sized box elsewhere. The same row also has an **⚙** button for manually setting Zoom/Pan/Rotate applied to every box of that size at once, plus its own reset button.
+2. **Per box selection, from the canvas edit toolbar** — the **🤖 Auto Crop Terpilih** (Auto Crop Selected) button (see "Canvas Edit Toolbar" above) re-crops only the box(es) currently selected on the active page, each using its own size/aspect ratio — useful for a selection that mixes several box sizes at once, or for re-correcting just a subset of boxes. The neighboring **⚙ Adjust Terpilih** (Adjust Selected) button gives manual Zoom/Pan/Rotate control over the same selection.
+
+Because results from both of these paths are stored as **per-box overrides** (rather than overwriting the photo's own global zoom/pan values), the very same photo can be used in several differently-sized boxes across the same layout, and each box keeps its own correct framing independently — none of them overwrite each other.
 
 Per-photo controls:
 | Button | Function |
@@ -134,12 +145,50 @@ Common causes of failure:
 
 ---
 
+## Export Layout (PDF / Image / Per-Box Photo)
+
+The **"Export"** card in the right panel (below Preview) holds resolution & format settings, plus three groups of download buttons.
+
+### Resolution & Format Settings
+
+- **Resolusi (DPI)** — dropdown: 72 (screen) / 150 (draft) / 300 (standard print, default) / 450 / 600 (high print) / **Custom…** (free value 30–1200 dpi via the "DPI Custom" field next to it). This DPI applies to every download (page images, PDF, and per-box photo export) — the on-screen preview itself always renders at a fixed light-weight resolution (150dpi base × devicePixelRatio) and doesn't change with the chosen export DPI.
+- **Format Unduh Gambar** (Image Download Format) — PNG (lossless, supports transparency) or JPG. Choosing JPG reveals a **Kualitas JPG** (JPG Quality) field (10–100, default 92).
+- Both settings are also saved/loaded via "Export/Import Pengaturan" (JSON) — see the section below.
+
+### 📄 Export PDF
+
+- **⬇ Halaman Ini** (This Page) — exports the active page as a single PDF file.
+- **⬇ Semua Halaman** (All Pages) — exports every page into one multi-page PDF file, each page sized to the chosen paper size.
+
+### 🖼️ Export Gambar (PNG/JPG) — Export Image
+
+- **⬇ Halaman Ini** — downloads the active page as a single image file (PNG/JPG per the chosen format).
+- **⬇ Semua Halaman** — downloads each page as a separate image file, one after another.
+- **⬇ Semua Halaman (ZIP)** — downloads every page at once, packaged into a single ZIP file.
+- Page image/PDF filenames follow the source photo's name for **Bulk** and **Mixed Size** modes (since each sheet = 1 photo), with a `-2`, `-3`, etc. suffix for repeated names. For other modes (Standard, Custom Layout, etc. — where one sheet can hold several different photos) the filename falls back to the default `pasfoto-halaman-N`.
+
+### ✂️ Export Foto (Ukuran Crop/Kotak) — Export Photos (Crop/Box Size), new feature
+
+A new export group that downloads **individual photos rather than composite pages** — each photo is exported already cropped to exactly match its own box size, including when the layout uses differently-sized boxes (Mixed Size). Useful for cases like sending loose per-photo files to a separate print shop, instead of a combined sheet.
+
+- **⬇ Halaman Ini** — exports every photo on the active page.
+- **⬇ Semua Halaman** — exports every photo from every page, one at a time.
+- **⬇ Semua Foto (ZIP)** — same as above, packaged into a single ZIP file.
+- **⬇ Kotak Terpilih** (Selected Boxes) — only the photos from the box(es) currently selected on the active page.
+
+Filename & de-duplication details:
+- Filename pattern: `[hal0N_]PhotoName[-2] - kotak_WxHmm` — the `hal0N_` prefix only appears when the export scope spans more than one page (All Pages / ZIP); the size tag (e.g. `30x40mm`) always follows that photo's actual box size.
+- If several boxes are **exact duplicates** of each other (same source photo, same box size, same rotation/flip, and same crop adjustment — zoom/pan/tilt) — for example a "fill 1 whole sheet" bulk result using a single photo — only **one** file is exported for that combination instead of one per box, avoiding a pile of identical duplicate files. Boxes with a different size or crop are still exported separately even if they share the same source photo.
+
+---
+
 ## Export & Import Settings (JSON)
 
 The **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** (Export/Import Settings) buttons save/load the layout configuration to/from a `.json` file, including:
 
 - Paper size, box size, gap, margins, colors, fill mode, guides, etc. (all of the app's built-in settings).
 - The 3 Auto Crop AI sliders: `aiHeadRatio`, `aiTopMargin`, `aiHairExt`.
+- Export settings: **DPI** (including the Custom value), **Image Download Format** (PNG/JPG), and **JPG Quality**.
 
 **Not included in the save:** the photo list itself (the image files) and each photo's AI status (`aiStatus` for auto-crop, `bgStatus` for background removal) — this is because image files can't be automatically embedded into the settings JSON. After reloading the page or importing settings, photos need to be re-uploaded, after which "Auto Crop Semua Foto" / per-photo background removal can be re-run if needed.
 
@@ -153,6 +202,7 @@ The **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** (Export/Import Set
   - `aiTransformPoint()` — transforms landmark coordinates into the rotated canvas's coordinate system.
   - `autoCropImage(im)` — the full pipeline: detect → rotate → compute crop rect → convert to `zoom/offX/offY` matching the main app's `drawCover()` scheme.
   - `autoCropAllImages()` — batches the process across all photos.
+  - For differently-sized boxes (Mixed Size): `cellMatchesBoxSize()` matches a box's on-page size (allowing for a swapped orientation from packing-induced rotation, 0.05mm tolerance) against one of the `state.mixedBoxes` rows; `findCellsForBoxSize()` collects every matching box across every page; `autoCropBoxSize()` runs auto-crop over that set (called by the 🤖 button on each size row); `autoCropSelectedCells()` does the same but for `state.selection` on the active page (called by the toolbar's 🤖 Auto Crop Terpilih button), taking each box's aspect ratio from `getCellEffectiveRect()` (which accounts for a manual box rotation). Results are stored as overrides in `state.cellCropOverrides['pageIdx:cellIdx']` — rather than overwriting the photo's own `im.zoom/offX/offY` — so a photo used across differently-sized boxes stays independently cropped per box.
 - The auto-cropped (already rotated) photo is stored as a new `<img>` element (built from `canvas.toDataURL()`), rather than overwriting the original. The original photo is kept in `im.origImg` for the 🗘 button and re-detection (detection always runs from the original photo, not a previous rotation result, to avoid compounding rotation error).
 - `aiImageCache` (a `Map` of `url → Image`) keeps every `<img>` element ever created, because the app's built-in Undo/Redo system stores snapshots as a **JSON string** — an `<img>` object can't be serialized directly to JSON, so the snapshot only stores the `url` (data URL) and looks the actual `<img>` element back up from the cache when undo/redo runs.
 - The app's built-in zoom UI range is `1×`–`3×` (you can't "zoom out" below the default cover crop); if the required face area is wider than that, the zoom value is automatically clamped to `1×` and flagged with `🤖✓*`.
@@ -161,6 +211,7 @@ The **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** (Export/Import Set
   - `bgBadge(status)` — renders the status badge (`processing`/`ok`/`fail`) on the photo row, alongside auto-crop's `aiBadge(status)`.
   - Inside `removeBackground()`, the model's output mask (low resolution) is upscaled **separately** from the original photo (which is always drawn at full resolution), then combined as the alpha channel — so photo sharpness doesn't degrade to match the mask's resolution.
 - `drawCoverRotated(ctx,img,dx,dy,dw,dh,zoom,offX,offY,rotDeg)` — the single drawing function used for the **"Rotate (Tilt)"** slider (used for page rendering, the live preview, and PDF/PNG export alike, so all three stay consistent). The photo is drawn `cover`-fit and then rotated by `rotDeg` degrees around the box's center, `clip()`-ed to the box area (dw×dh) so the tilt never bleeds onto the frame or neighboring boxes. Before rotating, the destination rect (dw,dh) is auto-scaled by a factor `s = |cos θ| + max(dw/dh, dh/dw) × |sin θ|` — the minimum scale needed for the rotated rect to still fully cover the original (dw×dh) box at any angle, preventing uncovered box corners (the "diagonal white triangle" bug). The existing `zoom`/`offX`/`offY` crop values are then applied as-is on top of that already-scaled rect.
+- Export: `getSelectedDPI()`/`canvasToDpiBlob()` apply the chosen DPI and format (PNG/JPG+quality) to a canvas before it's downloaded; `downloadCanvas()` wraps that into an `<a download>` trigger. `buildPageFilenames()` decides each page's filename (follows the source photo's name for Bulk/Mixed Size modes, falls back to `pasfoto-halaman-N` for other modes). For per-box photo export: `buildCropExportPlan(meta,scope)` collects the photo-bearing cells for the given scope (`page`/`all`/`selected`), skips duplicate cells via `cellCropSignature()` (a signature built from the photo id + box/photo rotation & flip + zoom/pan/tilt, rounded to 2 decimals) so boxes that would render byte-for-byte identical are only exported once, then builds each filename with `sanitizeFilename()` + `formatBoxSizeTag()` (e.g. `PhotoName - kotak_30x40mm`, with a `hal0N_` prefix when the scope spans multiple pages).
 
 ---
 
