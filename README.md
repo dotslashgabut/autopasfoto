@@ -19,7 +19,7 @@ Satu file HTML, tidak perlu instalasi apa pun — cukup dibuka di browser modern
 - Beberapa mode pengisian lembar: Standar, Bulk (1 lembar = 1 file), Ukuran Beragam/Mixed Size (skyline packing), Campur Foto + Mixed Size, Custom Layout (isi foto manual), dan **Custom Layout (Mixed Size)** — kotak-kotak berbeda ukuran disusun manual dengan bantuan packing otomatis yang sama seperti mode Mixed Size.
 - Edit layout manual: geser/putar kotak, atur zoom & posisi crop per foto.
 - Panduan potong (guide), warna bingkai, preset Polaroid/Frame.
-- Export ke **PDF**, **PNG/JPG per halaman** (atau **ZIP semua halaman**), dengan DPI & format pilihan sendiri. Tersedia juga **Export Foto per-Kotak** — unduh tiap foto individual sudah terpotong sesuai ukuran kotaknya (lihat section "Export Layout" di bawah).
+- Export ke **PDF**, **PNG/JPG per halaman** (atau **ZIP semua halaman**), dengan DPI & format pilihan sendiri. Bisa juga export **halaman tertentu atau rentang halaman** (mis. `1,3,5-7`) saja sebagai PDF, ZIP, atau file gambar terpisah. Tersedia juga **Export Foto per-Kotak** — unduh tiap foto individual sudah terpotong sesuai ukuran kotaknya (lihat section "Export Layout" di bawah).
 - Undo/Redo (Ctrl+Z / Ctrl+Y), mode Terang/Gelap, Bahasa ID/EN.
 - Export & Import pengaturan layout ke/dari file **JSON**.
 
@@ -147,13 +147,24 @@ Penyebab umum bila gagal:
 
 ## Export Layout (PDF / Gambar / Foto per-Kotak)
 
-Kartu **"Export"** di panel kanan (di bawah Preview) berisi pengaturan resolusi & format, plus tiga kelompok tombol unduh.
+Kartu **"Export"** di panel kanan (di bawah Preview) berisi pengaturan resolusi & format, plus empat kelompok tombol unduh.
 
 ### Pengaturan Resolusi & Format
 
 - **Resolusi (DPI)** — dropdown 72 (layar) / 150 (draft) / 300 (cetak standar, default) / 450 / 600 (cetak tinggi) / **Custom…** (nilai bebas 30–1200 dpi lewat kolom "DPI Custom" di sebelahnya). DPI ini berlaku untuk semua hasil unduhan (gambar halaman, PDF, dan export foto per-kotak) — preview di layar sendiri tetap dirender ringan di resolusi tetap (150dpi dasar × devicePixelRatio), tidak ikut berubah mengikuti DPI export yang dipilih.
 - **Format Unduh Gambar** — PNG (lossless, mendukung transparansi) atau JPG. Memilih JPG memunculkan kolom **Kualitas JPG** (10–100, default 92).
 - Kedua pengaturan ini ikut tersimpan/dimuat lewat "Export/Import Pengaturan" (JSON) — lihat bagian di bawah.
+
+### 🔢 Export Halaman Tertentu / Rentang
+
+Kolom input khusus untuk export hanya sebagian halaman saja, bukan seluruh layout — berguna untuk cetak ulang 1 halaman saja, atau export beberapa halaman saja dari layout multi-halaman yang besar.
+
+- Kolom **Nomor Halaman** — ketik daftar nomor halaman dan/atau rentang, dipisah koma, mis. `1,3,5-7` (halaman 1, 3, 5, 6, 7). Spasi di sekitar koma/tanda hubung diabaikan, dan entri duplikat/tumpang tindih otomatis dihilangkan & diurutkan. Kosongkan kolom ini dan pakai tombol "Semua Halaman" di bawah kalau mau export semuanya.
+- **⬇ PDF** — export hanya halaman yang diisi, digabung jadi satu file PDF (urut halaman menaik, terlepas dari urutan pengetikan).
+- **⬇ ZIP** — export hanya halaman yang diisi sebagai gambar, dikemas jadi satu file ZIP.
+- **⬇ Terpisah** — export hanya halaman yang diisi sebagai file gambar terpisah, satu unduhan per halaman (perilakunya sama seperti "⬇ Semua Halaman" tapi dibatasi ke halaman yang diisi saja).
+- Kalau kolom kosong, ada bagian yang tidak dikenali formatnya, atau semua nomor halaman di luar jangkauan (misal lebih besar dari jumlah total halaman), muncul toast peringatan dan tidak ada yang diekspor.
+- Nama file otomatis mendapat tag rentang halaman, mis. `pasfoto-halaman-1-3_5.pdf` / `...-1-3_5.zip`, dengan halaman berurutan digabung jadi rentang `awal-akhir` dan dipisah `_`.
 
 ### 📄 Export PDF
 
@@ -212,6 +223,7 @@ Tombol **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** menyimpan/memua
   - Di dalam `removeBackground()`, mask hasil model (resolusi rendah) di-upscale **terpisah** dari foto asli (yang tetap digambar di resolusi penuh), lalu digabung sebagai alpha channel — supaya ketajaman foto tidak ikut turun mengikuti resolusi mask.
 - `drawCoverRotated(ctx,img,dx,dy,dw,dh,zoom,offX,offY,rotDeg)` — fungsi gambar tunggal yang dipakai untuk slider **"Putar (Miring)"** (dipakai di render halaman, preview live, dan hasil export PDF/PNG, jadi semuanya konsisten). Foto digambar `cover`-fit lalu diputar `rotDeg` derajat di sekitar titik tengah kotak, dengan `clip()` ke area kotak (dw×dh) supaya kemiringan tidak bocor ke frame/kotak tetangga. Sebelum diputar, ukuran persegi tujuan (dw,dh) discale otomatis dengan faktor `s = |cos θ| + max(dw/dh, dh/dw) × |sin θ|` — rumus minimum supaya persegi yang sudah diputar itu tetap menutupi penuh kotak asli (dw×dh) di sudut berapa pun, mencegah sudut kotak yang tidak tertutup foto ("segitiga putih diagonal"). `zoom`/`offX`/`offY` (dari sistem crop bawaan) tetap dipakai apa adanya di atas rect yang sudah di-scale itu.
 - Export: `getSelectedDPI()`/`canvasToDpiBlob()` menerapkan DPI & format (PNG/JPG+quality) terpilih ke sebuah canvas sebelum diunduh; `downloadCanvas()` membungkusnya jadi trigger `<a download>`. `buildPageFilenames()` menentukan nama file per halaman (ikut nama foto sumber utk mode Bulk/Mixed Size, fallback `pasfoto-halaman-N` utk mode lain). Untuk export foto per-kotak: `buildCropExportPlan(meta,scope)` mengumpulkan sel-sel bergambar sesuai cakupan (`page`/`all`/`selected`), melewati sel duplikat lewat `cellCropSignature()` (signature dari id foto + rotasi/flip kotak & foto + zoom/pan/tilt, dibulatkan 2 desimal) supaya kotak yang hasilnya identik byte-per-byte hanya diekspor sekali, lalu menyusun nama file lewat `sanitizeFilename()` + `formatBoxSizeTag()` (mis. `NamaFoto - kotak_30x40mm`, dengan prefiks `hal0N_` kalau cakupannya multi-halaman).
+- Export rentang halaman: `parsePageRangeInput(str,maxPages)` mem-parse teks bergaya `1,3,5-7` menjadi array indeks halaman 0-based yang terurut & bebas duplikat, dibatasi ke `[1..maxPages]`, dan mengembalikan `null` untuk input kosong/tidak dikenali/seluruhnya di luar jangkauan (dipakai handler tombol untuk menampilkan toast validasi, bukan mengekspor apa-apa). `formatPageRangeTag(indices)` mengubah array itu kembali jadi tag nama file yang ringkas, menggabungkan halaman berurutan jadi rentang `awal-akhir` yang dipisah `_` (mis. `[0,1,2,4]` → `1-3_5`). Ketiga tombol rentang (`btnExportPdfRange`/`btnDlRangeZip`/`btnDlRange`) memakai ulang pipeline `renderPageCanvas()`/`canvasToDpiBlob()`/`downloadCanvas()` yang persis sama dengan tombol "Semua Halaman", hanya saja melakukan iterasi pada daftar indeks hasil parsing, bukan semua halaman.
 
 ---
 
@@ -220,8 +232,7 @@ Tombol **"⬆ Export Pengaturan"** / **"⬇ Import Pengaturan"** menyimpan/memua
 - **Panel kiri diperlebar** dari 400px → 460px, supaya label-label di kartu Auto Crop AI (mis. "Margin Atas (Ubun ke Tepi)") tidak terpotong/wrap ke 2 baris.
 - **Preview canvas dirender lebih tajam**: resolusi raster preview dinaikkan dari 150dpi menjadi 300dpi dasar, dikalikan lagi dengan `devicePixelRatio` layar (maks 2×) — supaya tidak buram di layar retina/high-DPI atau saat di-zoom. Tidak memengaruhi resolusi hasil export PDF/PNG (itu memang sudah memakai DPI pilihan sendiri).
 - **Perbaikan slider "Putar (Miring)" — segitiga putih/background di sudut sekarang hilang.** Slider ini (di panel ⚙ per-foto, juga berlaku pada hasil Auto Crop Wajah AI) memutar foto secara halus per-derajat di dalam kotak. Sebelumnya, memutar foto pada sudut berapa pun membuat sudut-sudut kotak tidak lagi tertutup foto, sehingga warna latar (`photoBgColor`) atau putih polos mengintip di sudut secara diagonal. Sekarang zoom foto dikompensasi otomatis mengikuti sudut kemiringan — makin miring, foto membesar secukupnya — supaya kotak selalu tertutup penuh di sudut berapa pun, mirip cara kerja alat "Straighten" di Lightroom/Photoshop.
-
----
+- **Perbaikan fitur Hapus Background (✂️) yang selalu gagal.** Ada bug scoping variabel di dalam `window.bgRemovalAI.removeBackground()` yang membuat fungsi ini selalu melempar error di setiap pemanggilan (bahkan setelah proses segmentasinya sendiri berhasil sepenuhnya), sehingga tombol ✂️ selalu berakhir menampilkan badge/toast gagal `✂️⚠`. Canvas-canvas kerja sekarang dideklarasikan di scope fungsi, bukan di dalam blok `try{}`, supaya blok `finally{}`-nya bisa benar-benar mengaksesnya — fitur ini sekarang berjalan sampai selesai dan mengembalikan hasil background transparan seperti seharusnya.
 
 ---
 
@@ -285,7 +296,6 @@ Lalu buka `http://localhost:8000/autopasfoto-offline.html` di browser. Setelah s
 ---
 
 ## Keterbatasan yang Diketahui
-
 
 - Deteksi wajah hanya mendukung **1 wajah per foto** (`numFaces: 1`); jika foto berisi lebih dari satu wajah, hasil bisa tidak sesuai harapan.
 - Estimasi "ubun-ubun" (`hairExt`) bersifat perkiraan geometris, bukan deteksi rambut sesungguhnya — sebaiknya dicek ulang manual untuk hasil cetak resmi (paspor, dokumen legal, dll).
