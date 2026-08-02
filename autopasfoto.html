@@ -691,12 +691,19 @@ window.bgRemovalAI.removeBackground = function(imgEl){
   const w = imgEl.naturalWidth, h = imgEl.naturalHeight;
   const result = window.bgRemovalAI.model.segment(imgEl);
   const mask = result.confidenceMasks[0];
+  /* Declared here (function scope) rather than inside the try{} block below,
+     because the finally{} block needs to reference them to free their pixel
+     buffers. const-declaring them inside try{} would make them inaccessible
+     in finally{} (ReferenceError), which caused removeBackground() to always
+     throw instead of returning — the root cause of the remove-background
+     feature failing. */
+  let maskCanvas, maskFullCanvas, outCanvas;
   try{
     const maskData = mask.getAsFloat32Array();
     const mw = mask.width, mh = mask.height;
 
     // 1) Render mask (resolusi rendah dari model) sebagai citra grayscale terpisah
-    const maskCanvas = document.createElement('canvas');
+    maskCanvas = document.createElement('canvas');
     maskCanvas.width = mw; maskCanvas.height = mh;
     const mctx = maskCanvas.getContext('2d');
     const maskImageData = mctx.createImageData(mw, mh);
@@ -710,7 +717,7 @@ window.bgRemovalAI.removeBackground = function(imgEl){
     mctx.putImageData(maskImageData, 0, 0);
 
     // 2) Upscale HANYA mask-nya ke resolusi penuh foto (dengan smoothing supaya tepi halus)
-    const maskFullCanvas = document.createElement('canvas');
+    maskFullCanvas = document.createElement('canvas');
     maskFullCanvas.width = w; maskFullCanvas.height = h;
     const mfctx = maskFullCanvas.getContext('2d');
     mfctx.imageSmoothingEnabled = true;
@@ -719,7 +726,7 @@ window.bgRemovalAI.removeBackground = function(imgEl){
     const maskFullData = mfctx.getImageData(0, 0, w, h).data;
 
     // 3) Gambar foto ASLI di resolusi PENUH (tidak pernah diperkecil, jadi tetap tajam)
-    const outCanvas = document.createElement('canvas');
+    outCanvas = document.createElement('canvas');
     outCanvas.width = w; outCanvas.height = h;
     const octx = outCanvas.getContext('2d');
     octx.drawImage(imgEl, 0, 0, w, h);
